@@ -11,15 +11,11 @@ class SchruteBot:
     def __init__(self):
         self.conn = sqlite3.connect(DB_FILE)
         self.cursor = self.conn.cursor()
-        self.create_table()
+        self.create_tables()
         self.idle_time = 0
-        self.nudges = [
-            "Inactivity detected. If you were in the wild, you would be dead.",
-            "Are you working or watching beets grow? Stay focused!",
-            "Distractions are for the weak. Finish your task now!"
-        ]
-
-    def create_table(self):
+        self.nudges = self.load_dwight_quotes()
+    
+    def create_tables(self):
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +26,16 @@ class SchruteBot:
             )
         ''')
         self.conn.commit()
+    
+    def load_dwight_quotes(self):
+        try:
+            self.cursor.execute("SELECT quote FROM dwight_quotes")
+            quotes = [row[0] for row in self.cursor.fetchall()]
+            if not quotes:
+                raise sqlite3.OperationalError
+            return quotes
+        except sqlite3.OperationalError:
+            return ["Error: You have failed to set up the database correctly. This is unacceptable."]
     
     def generate_hash(self, task):
         return hashlib.sha256(task.encode()).hexdigest()
@@ -66,11 +72,14 @@ class SchruteBot:
         self.cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")
         completed = self.cursor.fetchone()[0]
         return f"You completed {completed} tasks today. This is acceptable. Barely."
+    
+    def dwightism(self):
+        return random.choice(self.nudges)
 
 def main():
     bot = SchruteBot()
     parser = argparse.ArgumentParser(description='SchruteBot - The Productivity Enforcer')
-    parser.add_argument('command', choices=['add', 'view', 'complete', 'report'], help='Command to execute')
+    parser.add_argument('command', choices=['add', 'view', 'complete', 'report', 'dwightism'], help='Command to execute')
     parser.add_argument('task', nargs='?', help='Task description (for add or complete)')
     args = parser.parse_args()
 
@@ -82,6 +91,8 @@ def main():
         print(bot.complete_task(args.task))
     elif args.command == 'report':
         print(bot.daily_report())
+    elif args.command == 'dwightism':
+        print(bot.dwightism())
     else:
         print("Invalid command or missing task description.")
 
