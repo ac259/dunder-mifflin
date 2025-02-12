@@ -1,11 +1,17 @@
 import time
 import random
 import argparse
-import sys
+import sqlite3
+import hashlib
+from datetime import datetime
+
+DB_FILE = "schrutebot.db"
 
 class SchruteBot:
     def __init__(self):
-        self.tasks = []
+        self.conn = sqlite3.connect(DB_FILE)
+        self.cursor = self.conn.cursor()
+        self.create_table()
         self.idle_time = 0
         self.nudges = [
             "Inactivity detected. If you were in the wild, you would be dead.",
@@ -13,18 +19,39 @@ class SchruteBot:
             "Distractions are for the weak. Finish your task now!"
         ]
 
+    def create_table(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                description TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                hash TEXT UNIQUE
+            )
+        ''')
+        self.conn.commit()
+    
+    def generate_hash(self, task):
+        return hashlib.sha256(task.encode()).hexdigest()
+
     def add_task(self, task):
-        self.tasks.append(task)
+        task_hash = self.generate_hash(task)
+        self.cursor.execute("INSERT INTO tasks (description, hash) VALUES (?, ?)", (task, task_hash))
+        self.conn.commit()
         return f"Task added: {task}. Don't disappoint me."
     
     def view_tasks(self):
-        if not self.tasks:
+        self.cursor.execute("SELECT description, status FROM tasks")
+        tasks = self.cursor.fetchall()
+        if not tasks:
             return "No tasks? Unacceptable. You must always have something to do."
-        return "Your tasks: " + ", ".join(self.tasks)
+        return "Your tasks: " + ", ".join([f"{t[0]} ({t[1]})" for t in tasks])
     
     def complete_task(self, task):
-        if task in self.tasks:
-            self.tasks.remove(task)
+        task_hash = self.generate_hash(task)
+        self.cursor.execute("UPDATE tasks SET status = 'completed' WHERE hash = ?", (task_hash,))
+        self.conn.commit()
+        if self.cursor.rowcount:
             return f"Task '{task}' completed. Adequate."
         else:
             return f"Task '{task}' not found. This inefficiency disgusts me."
@@ -36,8 +63,9 @@ class SchruteBot:
         return "Good. Keep working."
     
     def daily_report(self):
-        completed = 5 - len(self.tasks)
-        return f"You completed {completed}/5 tasks. This is acceptable. Barely."
+        self.cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")
+        completed = self.cursor.fetchone()[0]
+        return f"You completed {completed} tasks today. This is acceptable. Barely."
 
 def main():
     bot = SchruteBot()
