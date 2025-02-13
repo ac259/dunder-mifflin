@@ -11,7 +11,7 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 from common.mistral_agent import MistralAgent
-from agents.jimster_agent import JimsterAgent
+from agents.jimster.big_tuna import JimsterAgent
 
 DB_FILE = "schrutebot.db"
 
@@ -38,6 +38,19 @@ class SchruteBot:
             )
         ''')
         self.conn.commit()
+    
+    def load_dwight_quotes(self):
+        try:
+            self.cursor.execute("SELECT line_text FROM dwight_quotes")
+            quotes = [row[0] for row in self.cursor.fetchall()]
+            if not quotes:
+                raise sqlite3.OperationalError
+            return quotes
+        except sqlite3.OperationalError:
+            return ["Error: You have failed to set up the database correctly. This is unacceptable."]
+    
+    def generate_hash(self, task):
+        return hashlib.sha256(task.encode()).hexdigest()
     
     def add_task(self, task, priority="medium"):
         task = self.jimster.prank_task(task)  # Jimster may modify the task
@@ -78,6 +91,48 @@ class SchruteBot:
         time.sleep(1)
         print(f"\n*Dwight's commentary:* {self.generate_dynamic_response('view_tasks', context)}")
     
+    def complete_task(self, task):
+        task_hash = self.generate_hash(task)
+        self.cursor.execute("UPDATE tasks SET status = 'completed' WHERE hash = ?", (task_hash,))
+        self.conn.commit()
+
+        if self.cursor.rowcount:
+            print(f"✅ **Task Completed:** '{task}'\n")
+            context = f"Impressive. But is it *truly* complete, or just half-heartedly done like Stanley's sales calls?"
+        else:
+            print(f"❌ **Task Not Found:** '{task}'\n")
+            context = f"Either you never added it, or you are lying. And I *never* tolerate liars."
+        
+        print("*Dwight's commentary is loading...*")
+        time.sleep(1)
+        print(self.generate_dynamic_response("complete_task", context))
+    
+    def daily_report(self):
+        self.cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")
+        completed = self.cursor.fetchone()[0]
+        print(f"📊 **Daily Report:** {completed} tasks completed.\n")
+        context = f"Today, {completed} tasks were completed. That is {'acceptable' if completed > 5 else 'disappointing'}. Efficiency is key."
+        print("*Dwight's commentary is loading...*")
+        time.sleep(1)
+        print(self.generate_dynamic_response("daily_report", context))
+    
+    def dwightism(self):
+        print("*Dwight's wisdom is loading...*")
+        time.sleep(1)
+        print(self.generate_dynamic_response("dwightism"))
+    
+    def detect_idle(self, seconds):
+        self.idle_time += seconds
+        if self.idle_time > 10:
+            print(self.generate_dynamic_response("idle"))
+        else:
+            print(self.generate_dynamic_response("working"))
+    
+    def generate_dynamic_response(self, prompt_type, context=""):
+        quote_context = "\n".join(random.sample(self.cached_quotes, min(len(self.cached_quotes), 5)))
+        prompt = f"Act as Dwight Schrute from The Office.\n\n**Scenario:** {context}\n\n**Use these Dwight quotes for inspiration:**\n{quote_context}\n\n**Now, respond as Dwight Schrute:**"
+        return self.mistral.generate_response(prompt)
+    
 
 def main():
     bot = SchruteBot()
@@ -91,6 +146,12 @@ def main():
         bot.add_task(args.task, args.priority)
     elif args.command == 'view':
         bot.view_tasks()
+    elif args.command == 'complete' and args.task:
+        bot.complete_task(args.task)
+    elif args.command == 'report':
+        bot.daily_report()
+    elif args.command == 'dwightism':
+        bot.dwightism()
     elif args.command == 'prank_toggle':
         bot.jimster.toggle_prank_mode()
     else:
