@@ -3,7 +3,15 @@ import random
 import argparse
 import sqlite3
 import hashlib
+import sys
+import os
 from datetime import datetime
+
+# Add project root to sys.path dynamically
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+from common.mistral_agent import MistralAgent
+
 
 DB_FILE = "schrutebot.db"
 
@@ -14,6 +22,7 @@ class SchruteBot:
         self.create_tables()
         self.idle_time = 0
         self.nudges = self.load_dwight_quotes()
+        self.mistral = MistralAgent()
     
     def create_tables(self):
         self.cursor.execute('''
@@ -39,42 +48,57 @@ class SchruteBot:
     
     def generate_hash(self, task):
         return hashlib.sha256(task.encode()).hexdigest()
-
     def add_task(self, task):
         task_hash = self.generate_hash(task)
         self.cursor.execute("INSERT INTO tasks (description, hash) VALUES (?, ?)", (task, task_hash))
         self.conn.commit()
-        return f"Task added: {task}. Don't disappoint me."
+        return self.generate_dynamic_response(f"add_task {task}")
     
     def view_tasks(self):
         self.cursor.execute("SELECT description, status FROM tasks")
         tasks = self.cursor.fetchall()
         if not tasks:
-            return "No tasks? Unacceptable. You must always have something to do."
-        return "Your tasks: " + ", ".join([f"{t[0]} ({t[1]})" for t in tasks])
+            return self.generate_dynamic_response("no_tasks")
+        return self.generate_dynamic_response(f"view_tasks {len(tasks)}")
     
     def complete_task(self, task):
         task_hash = self.generate_hash(task)
         self.cursor.execute("UPDATE tasks SET status = 'completed' WHERE hash = ?", (task_hash,))
         self.conn.commit()
         if self.cursor.rowcount:
-            return f"Task '{task}' completed. Adequate."
+            return self.generate_dynamic_response(f"complete_task {task}")
         else:
-            return f"Task '{task}' not found. This inefficiency disgusts me."
+            return self.generate_dynamic_response("task_not_found")
     
     def detect_idle(self, seconds):
         self.idle_time += seconds
         if self.idle_time > 10:
-            return random.choice(self.nudges)
-        return "Good. Keep working."
+            return self.generate_dynamic_response("idle")
+        return self.generate_dynamic_response("working")
     
     def daily_report(self):
         self.cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")
         completed = self.cursor.fetchone()[0]
-        return f"You completed {completed} tasks today. This is acceptable. Barely."
+        return self.generate_dynamic_response(f"daily_report {completed}")
     
     def dwightism(self):
-        return random.choice(self.nudges)
+        return self.generate_dynamic_response("dwightism")
+    
+    def generate_dynamic_response(self, context):
+        """Generates a context-aware Dwight-style response."""
+        dwight_quotes = self.load_dwight_quotes()
+        quote_context = "\n".join(random.sample(dwight_quotes, min(len(dwight_quotes), 5)))
+        prompt = f"""
+        You are Dwight Schrute from The Office.
+        You respond with confidence, intensity, and factual correctness.
+        Consider the following situation: {context}
+        Use the following quotes as inspiration for your tone and style:
+        {quote_context}
+        
+        Dwight:
+        """
+        return self.mistral.generate_response(prompt)
+    
 
 def main():
     bot = SchruteBot()

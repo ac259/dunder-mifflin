@@ -3,3 +3,6 @@ __pycache__
 .pytest_cache
 .DS_Store
 *.parquet
+venv/
+.venv/
+env/
