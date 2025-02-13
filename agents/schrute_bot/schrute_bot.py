@@ -29,7 +29,7 @@ class SchruteBot:
     
     def load_dwight_quotes(self):
         try:
-            self.cursor.execute("SELECT quote FROM dwight_quotes")
+            self.cursor.execute("SELECT line_text FROM dwight_quotes")
             quotes = [row[0] for row in self.cursor.fetchall()]
             if not quotes:
                 raise sqlite3.OperationalError
