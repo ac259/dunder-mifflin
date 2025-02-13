@@ -42,7 +42,7 @@ Generates vague, possibly illegal but intriguing business ideas.
 
 
 ## Folder Structure
-
+```
 dunder-mifflin/
 │── agents/                   # Individual AI agents (each mapped to an Office character)
 │   │── schrute_bot/          # Dwight Schrute's Productivity Enforcer
@@ -84,3 +84,4 @@ dunder-mifflin/
 │── requirements.txt          # Python dependencies
 │── .gitignore                # Ignoring unnecessary files (logs, env files, etc.)
 │── LICENSE                   # Open-source license (if applicable)
+```
