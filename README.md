@@ -56,9 +56,15 @@ dunder-mifflin/
 │
 │── core/                     # Central system logic
 │   │── __init__.py
+|   |__ mistral_agent.py      # Mistral LLM handling (shared across agents)
 │   │── manager.py            # Multi-agent manager (Michael delegates tasks)
 │   │── utils.py              # Shared utility functions
 │
+│── database/                    # Database & migrations
+│   │── schema.sql                # SQL schema for setup
+│   │── migrations/               # Future database upgrades
+│   │── schrutebot.db             # SQLite database file
+|
 │── integrations/             # APIs & external service integrations
 │   │── google_calendar.py    # Google Calendar API integration
 │   │── notion_api.py         # Notion API integration
