@@ -48,3 +48,28 @@ export default tseslint.config({
   },
 })
 ```
+
+### What is Vite?  *<context> to self*
+Vite (pronounced "veet") is a modern frontend build tool that makes starting and developing React (or other JavaScript frameworks) super fast.
+
+It replaces older tools like Create React App (CRA), which are slower and more complex.
+
+### Why Use Vite Instead of Create React App (CRA)?
+Here are the main reasons why Vite is better:
+
+1️⃣ Faster Startup 🚀
+
+CRA bundles everything before starting, which takes time.
+Vite instantly starts your app without bundling everything upfront.
+2️⃣ Instant Hot Reloading ⚡
+
+In CRA, when you change code, it recompiles everything (slow).
+In Vite, it reloads only what changed (super fast).
+3️⃣ Lightweight & Minimal 🏋️‍♂️
+
+CRA includes a lot of extra files you might not need.
+Vite is leaner and gives you just what’s necessary.
+4️⃣ Better for Production 📦
+
+Vite uses esbuild, a modern JavaScript bundler, making builds much faster.
+CRA’s build process is slower and sometimes bloated.
