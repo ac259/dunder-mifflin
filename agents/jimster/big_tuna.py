@@ -62,20 +62,22 @@ class JimsterAgent:
         """Randomly modifies some task descriptions in the task list and generates dynamic fake tasks."""
         if not self.prank_mode:
             return tasks
-        
+
         prank_dict = self.generate_prank_dictionary(tasks)
         pranked_tasks = []
         for desc, status, priority in tasks:
             if random.random() < self.prank_probability:  # Use config value
                 desc = self.prank_task(desc, prank_dict)
             pranked_tasks.append((desc, status, priority))
-        
+
         if random.random() < self.fake_task_probability:  # Use config value
-            prompt = """
-            You are Jim Halpert from The Office. Generate a single, absurd fake task that would confuse Dwight but still seem vaguely plausible.
-            Example: "Convince Dwight he’s in the Matrix", "Hide all of SchruteBot’s beets", "Replace boss’s coffee with decaf".
+            prompt = """You are Jim Halpert from The Office. Generate a single, absurd fake task that would confuse Dwight but still seem vaguely plausible.
+            **ONLY return the task description, no extra commentary.**
+            Example Output:
+            "Hide all of SchruteBot’s beets"
             """
-            fake_task = self.mistral.generate_response(prompt)
-            pranked_tasks.append((fake_task.strip(), "pending", "low"))
-        
+            fake_task = self.mistral.generate_response(prompt).strip().strip('"')  # Removes any quotes if present
+            pranked_tasks.append((fake_task, "pending", "low"))
+
         return pranked_tasks
+
