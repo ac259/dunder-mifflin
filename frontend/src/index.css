@@ -1,1 +1,29 @@
 @import "tailwindcss";
+@import "@fontsource/ibm-plex-mono";
+
+/* CRT Glow Effect */
+.crt-glow {
+text-shadow: 0 0 5px #00ff00, 0 0 10px #008000;
+}
+
+/* Subtle Screen Glow */
+.crt-screen {
+box-shadow: 0 0 20px rgba(91, 165, 91, 0.2);
+}
+
+/* We’ll make the screen occasionally flicker, 
+similar to an old-school IBM 5150 terminal. */
+
+
+@keyframes crtFlicker {
+0% { opacity: 1; }
+90% { opacity: 0.98; }
+95% { opacity: 0.95; }
+100% { opacity: 1; }
+}
+
+/* Apply flicker animation */
+.crt-flicker {
+animation: crtFlicker 1.5s infinite alternate;
+}
+  
