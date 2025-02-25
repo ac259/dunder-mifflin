@@ -4,6 +4,7 @@ import os
 import argparse
 import sys
 from datetime import datetime
+import logging
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -11,6 +12,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from common.web_scraper import WebScraper  # Web search module
 from common.pdf_generator import PDFGenerator  # PDF generation module
 from common.mistral_agent import MistralAgent  # Mistral-7B Agent
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class PamBot:
     def __init__(self):
@@ -31,34 +36,42 @@ class PamBot:
             response_json = json.loads(response)
             return response_json.get("subtopics", [])
         except json.JSONDecodeError:
-            print("Error parsing JSON response from LLM.")
+            logger.error("Error parsing JSON response from LLM.")
             return []
+
+    async def research_topic(self, topic):
+        """Conducts web search and content extraction for a single topic."""
+        logger.info(f"🔍 Searching the web for: {topic}")
+        search_results = self.scraper.search(topic)
+        if not search_results:
+            return []
+
+        results = []
+        for result in search_results:
+            extracted_content = self.scraper.extract(result['url'])
+            if extracted_content:
+                result['content'] = extracted_content[0].get('content', 'No extracted content available.')
+            else:
+                result['content'] = result.get('snippet', 'No additional content found.')
+            results.append(result)
+        return results
 
     async def research_task(self, query):
         """Conducts research by generating topics, performing web searches, extracting content, and summarizing results."""
-        print(f"🎨 Pam is brainstorming search topics for: {query}")
+        logger.info(f"🎨 Pam is brainstorming search topics for: {query}")
         research_topics = self.generate_research_topics(query)
-        print(f"Research topics are: {research_topics}")
+        logger.info(f"Research topics are: {research_topics}")
 
         if not research_topics:
-            print("😕 No relevant research topics generated.")
+            logger.warning("😕 No relevant research topics generated.")
             return None
 
-        all_results = []
-        for topic in research_topics:
-            print(f"🔍 Searching the web for: {topic}")
-            search_results = self.scraper.search(topic)
-            if search_results:
-                for result in search_results:
-                    extracted_content = self.scraper.extract(result['url'])
-                    if extracted_content:
-                        result['content'] = extracted_content[0].get('content', 'No extracted content available.')
-                    else:
-                        result['content'] = result.get('snippet', 'No additional content found.')
-                    all_results.append(result)
+        # Parallelize web searches and content extractions
+        all_results = await asyncio.gather(*[self.research_topic(topic) for topic in research_topics])
+        all_results = [item for sublist in all_results for item in sublist]  # Flatten the list
 
         if not all_results:
-            print("😕 No relevant results found.")
+            logger.warning("😕 No relevant results found.")
             return None
 
         summary = self.summarize_results(all_results)
@@ -66,22 +79,26 @@ class PamBot:
         self.results[query] = structured_summary
 
         pdf_path = self.generate_pdf(query, structured_summary)
-        print(f"✅ Research done! Download your report here: {pdf_path}")
+        logger.info(f"✅ Research done! Download your report here: {pdf_path}")
 
         return structured_summary
 
     def summarize_results(self, results):
-        """Summarizes the research findings into a digestible format."""
-        summary = "\n".join([f"- {res['title']}: {res['content']}" for res in results[:10]])
-        return summary
+        """Summarizes the research findings into a digestible format using LLM."""
+        content = "\n".join([f"- {res['title']}: {res['content']}" for res in results[:10]])
+        prompt = f"""
+        Summarize the following research findings into a coherent and structured format:
+        {content}
+        Provide a summary with an introduction, key findings, and conclusion.
+        """
+        return self.llm.generate_response(prompt)
 
     def refine_summary(self, summary, query):
-        """Uses LLM to improve and structure the summary."""
+        """Uses LLM to further improve and structure the summary."""
         prompt = f"""
-        Organize and enhance the readability of the following research summary:
-        Query: {query}
-        Summary: {summary}
-        Return a structured and well-formatted version of the summary.
+        Organize and enhance the readability of the following research summary for the query "{query}":
+        {summary}
+        Structure it with sections like Introduction, Key Findings, and Conclusion.
         """
         return self.llm.generate_response(prompt)
 
@@ -90,8 +107,11 @@ class PamBot:
         filename = f"{topic.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
         pdf_path = os.path.join("reports", filename)
 
+        # Preprocess content to ensure proper formatting
+        formatted_content = content.replace('\n', '<br>')  # Simple replacement for line breaks
+
         pdf_generator = PDFGenerator()
-        pdf_generator.create_pdf(title=f"Research Report: {topic}", content=content, output_path=pdf_path)
+        pdf_generator.create_pdf(title=f"Research Report: {topic}", content=formatted_content, output_path=pdf_path)
 
         return pdf_path
 
