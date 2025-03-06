@@ -3,15 +3,16 @@ import json
 import os
 import argparse
 import sys
-from datetime import datetime
 import logging
+from datetime import datetime
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 from common.web_scraper import WebScraper  # Web search module
 from common.pdf_generator import PDFGenerator  # PDF generation module
-from common.mistral_agent import MistralAgent  # Mistral-7B Agent
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,9 +21,17 @@ logger = logging.getLogger(__name__)
 class PamBot:
     def __init__(self):
         self.results = {}
-        self.llm = MistralAgent()
+        model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/qwen2.5_32b_instruct"))
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype="auto", device_map="auto")
         self.scraper = WebScraper()
 
+    def generate_response(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
+        # model card for the qwen model indicates 8k max output length
+        outputs = self.model.generate(**inputs, max_length=5000, temperature=0.7)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
     def generate_research_topics(self, query):
         """Generates research topics based on the user query using the LLM."""
         prompt = f"""
@@ -31,7 +40,7 @@ class PamBot:
         Format:
         {{ "subtopics": ["topic1", "topic2", "topic3", "topic4", "topic5"] }}
         """
-        response = self.llm.generate_response(prompt)
+        response = self.generate_response(prompt)
         try:
             response_json = json.loads(response)
             return response_json.get("subtopics", [])

@@ -8,3 +8,5 @@ venv/
 env/
 .env
 reports/
+models/
+qwen2_5_32b_instruct/
