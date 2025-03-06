@@ -4,6 +4,7 @@ import os
 import argparse
 import sys
 import logging
+import torch
 from datetime import datetime
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -21,13 +22,21 @@ logger = logging.getLogger(__name__)
 class PamBot:
     def __init__(self):
         self.results = {}
-        model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/qwen2.5_32b_instruct"))
+        model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../common/models/qwen2_5_32b_instruct"))
+        print(f"Model Path is : {model_path}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype="auto", device_map="auto")
         self.scraper = WebScraper()
 
     def generate_response(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
+        # Set the device to MPS if available, otherwise CPU
+        # No CUDA Apple's M1 chips support GPU acceleration through 
+        # the Metal Performance Shaders (MPS) backend, introduced in PyTorch 1.12
+        if torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(device)
         # model card for the qwen model indicates 8k max output length
         outputs = self.model.generate(**inputs, max_length=5000, temperature=0.7)
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
