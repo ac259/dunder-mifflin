@@ -64,7 +64,7 @@ class PamBot:
         
         # Default configuration
         default_config = {
-            "use_google_calendar": False,
+            "use_google_calendar": True,
             "google_calendar_id": "primary",
             "token_path": "token.json",
             "credentials_path": "credentials.json",
@@ -617,8 +617,8 @@ if __name__ == "__main__":
     pam = PamBot()
     
     # Test responses
-    print(pam.respond("Schedule a meeting with Michael tomorrow at 2pm about quarterly review"))
-    print(pam.respond("Remind me to call the client in 2 hours"))
+    print(pam.respond("Remind me to call the e-renters insurance tomorrow @9:30AM"))
+    print(pam.respond("Remind me that tomorrow at 1:30PM I have my annual review meeting with Jim Borg"))
     print(pam.respond("What's on my calendar today?"))
     
     # Register some agents
