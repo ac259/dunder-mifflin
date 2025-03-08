@@ -2,20 +2,27 @@ import random
 import json
 import os
 from common.mistral_agent import MistralAgent
-from multi_agent_orchestrator.agents import Agent
+from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 
 CONFIG_FILE = "config.json"
 
 class JimsterAgent(Agent):
     def __init__(self):
-        super().__init__(name="JimsterAgent")
+        options = AgentOptions(
+            name="JimsterAgent",
+            description="A prankster assistant specializing in humorous task modifications and fake assignments.",
+            save_chat=True,
+            callbacks=AgentCallbacks(),
+            LOG_AGENT_DEBUG_TRACE=False
+        )
+        super().__init__(options)
         config = self.load_config()
         self.prank_mode = config["prank_mode"]
         self.prank_probability = config["prank_probability"]
         self.fake_task_probability = config["fake_task_probability"]
         self.mistral = MistralAgent()
 
-    def handle_request(self, message: str):
+    def process_request(self, message: str):
         """Handles prank-related requests for JimsterAgent."""
         message = message.lower().strip()
 

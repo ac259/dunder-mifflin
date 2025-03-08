@@ -1,44 +1,68 @@
 import sys
 import os
+import asyncio
 from multi_agent_orchestrator.orchestrator import MultiAgentOrchestrator, OrchestratorConfig
 from multi_agent_orchestrator.agents import Agent
-from common.mistral_agent import MistralAgent
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
+from common.mistral_agent import MistralAgent
+from agents.jimster.big_tuna import JimsterAgent
+from agents.schrute_bot.schrute_bot import SchruteBot
+from common.mistral_classifier import MistralClassifier
 
 class PamBot:
     def __init__(self):
         # Initialize Mistral LLM
         self.mistral = MistralAgent()
+        self.schrute_bot = SchruteBot()
+        self.jimster_agent = JimsterAgent()
+        self.classifier = MistralClassifier()
 
         # Initialize Orchestrator
-        self.DEFAULT_CONFIG = OrchestratorConfig()
-        self.orchestrator = MultiAgentOrchestrator()
+        self.DEFAULT_CONFIG = OrchestratorConfig(
+                                                LOG_AGENT_CHAT=True,
+                                                LOG_CLASSIFIER_CHAT=True,
+                                                LOG_CLASSIFIER_RAW_OUTPUT=False,
+                                                LOG_CLASSIFIER_OUTPUT=True,
+                                                LOG_EXECUTION_TIMES=True,
+                                                MAX_RETRIES=3,
+                                                MAX_MESSAGE_PAIRS_PER_AGENT=50,
+                                                USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED=True,
+                                                CLASSIFICATION_ERROR_MESSAGE="Oops! We couldn't process your request. Please try again.",
+                                                NO_SELECTED_AGENT_MESSAGE="I'm sorry, I couldn't determine how to handle your request. Could you please rephrase it?",
+                                                GENERAL_ROUTING_ERROR_MSG_MESSAGE="An error occurred while processing your request. Please try again later."
+                                                )
+        self.orchestrator = MultiAgentOrchestrator(options=self.DEFAULT_CONFIG, classifier=self.classifier)
+    
+    # Register agents    
+    def register_agents(self):
+        """Registers all available agents."""
+        agents = [self.schrute_bot, self.jimster_agent]
+        
+        # Pass agents list to the classifier before adding them
+        self.classifier.set_agents(agents)
+        
+        for agent in agents:
+            self.orchestrator.add_agent(agent)
+            print(f"✅ Registered agent: {agent.name}")
 
-        # Register agents
-        self.orchestrator.add_agent(Agent(name='SchruteBot', handle=self.handle_task_request))
-        self.orchestrator.add_agent(Agent(name='JimsterAgent', handle=self.handle_prank_request))
-
-    def route_request(self, message: str):
-        # Use Mistral to determine intent
-        intent = self.mistral.analyze_intent(message)
-
-        # Delegate to the appropriate agent
-        response = self.orchestrator.delegate(intent, message)
+    async def route_requests(self, message: str, user_id: str, session_id: str):
+        """Routes the user message to the appropriate agent."""
+        # Call the orchestrator's route_request method
+        response = await self.orchestrator.route_request(
+            user_input=message,
+            user_id=user_id,
+            session_id=session_id
+        )
         return response
-
-    def handle_task_request(self, message: str):
-        # Logic to handle task-related requests
-        return "Task handled."
-
-    def handle_prank_request(self, message: str):
-        # Logic to handle prank-related requests
-        return "Prank executed."
 
 # Example usage
 if __name__ == "__main__":
     pam = PamBot()
-    user_input = "Add task to simplify pam bot."
-    print(pam.route_request(user_input))
+    user_input = "Add task to simplify PamBot"
+    user_id = "user_123"
+    session_id = "session_456"
+    # Run the asynchronous route_requests method
+    response = asyncio.run(pam.route_requests(user_input, user_id, session_id))
+    print(response)

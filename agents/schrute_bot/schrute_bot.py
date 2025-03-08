@@ -6,7 +6,7 @@ import hashlib
 import sys
 import os
 from datetime import datetime
-from multi_agent_orchestrator.agents import Agent
+from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 
 
 # Add project root to sys.path dynamically
@@ -19,7 +19,14 @@ DB_FILE = "schrutebot.db"
 
 class SchruteBot(Agent):
     def __init__(self):
-        super().__init__(name="SchruteBot")
+        options = AgentOptions(
+            name="SchruteBot",
+            description="Assistant for managing tasks with a Dwight Schrute persona.",
+            save_chat=True,
+            callbacks=AgentCallbacks(),
+            LOG_AGENT_DEBUG_TRACE=False
+        )
+        super().__init__(options)
         self.conn = sqlite3.connect(DB_FILE)
         self.cursor = self.conn.cursor()
         self.create_tables()
@@ -42,7 +49,7 @@ class SchruteBot(Agent):
         ''')
         self.conn.commit()
     
-    def handle_request(self, message: str):
+    def process_request(self, message: str):
         """Handles task-related requests for SchruteBot."""
         message = message.lower().strip()
 
