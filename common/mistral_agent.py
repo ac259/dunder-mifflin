@@ -16,3 +16,10 @@ class MistralAgent:
 
         response = self.llm.generate(prompt, max_tokens=100)
         return response
+
+    def analyze_intent(self, message: str) -> str:
+        prompt = f"Classify the intent of the following message into one of the predefined categories {self.intents}: \"{message}\""
+        inputs = self.tokenizer(prompt, return_tensors='pt')
+        outputs = self.model.generate(**inputs, max_length=50)
+        intent = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return intent.strip().lower()

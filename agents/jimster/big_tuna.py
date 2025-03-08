@@ -2,17 +2,40 @@ import random
 import json
 import os
 from common.mistral_agent import MistralAgent
+from multi_agent_orchestrator.agents import Agent
 
 CONFIG_FILE = "config.json"
 
-class JimsterAgent:
+class JimsterAgent(Agent):
     def __init__(self):
+        super().__init__(name="JimsterAgent")
         config = self.load_config()
         self.prank_mode = config["prank_mode"]
         self.prank_probability = config["prank_probability"]
         self.fake_task_probability = config["fake_task_probability"]
         self.mistral = MistralAgent()
 
+    def handle_request(self, message: str):
+        """Handles prank-related requests for JimsterAgent."""
+        message = message.lower().strip()
+
+        if message.startswith("prankify task"):
+            task_description = message.replace("prankify task", "").strip()
+            pranked_task = self.prank_task(task_description, self.generate_prank_dictionary([(task_description, "", "")]))
+            return f"🤡 Pranked Task: '{pranked_task}'"
+
+        elif message == "generate prank task":
+            fake_task = self.mistral.generate_response("Generate a single, absurd fake task.")
+            return f"🎭 Fake Task: {fake_task.strip()}"
+
+        elif message == "toggle prank mode":
+            self.toggle_prank_mode()
+            return "🎭 Prank mode toggled."
+
+        else:
+            return "❌ Command not recognized."
+
+    
     def load_config(self):
         """Loads Jimster's settings from config file."""
         if not os.path.exists(CONFIG_FILE):

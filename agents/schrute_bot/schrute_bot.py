@@ -6,6 +6,8 @@ import hashlib
 import sys
 import os
 from datetime import datetime
+from multi_agent_orchestrator.agents import Agent
+
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -15,8 +17,9 @@ from agents.jimster.big_tuna import JimsterAgent
 
 DB_FILE = "schrutebot.db"
 
-class SchruteBot:
+class SchruteBot(Agent):
     def __init__(self):
+        super().__init__(name="SchruteBot")
         self.conn = sqlite3.connect(DB_FILE)
         self.cursor = self.conn.cursor()
         self.create_tables()
@@ -39,6 +42,40 @@ class SchruteBot:
         ''')
         self.conn.commit()
     
+    def handle_request(self, message: str):
+        """Handles task-related requests for SchruteBot."""
+        message = message.lower().strip()
+
+        if message.startswith("add task"):
+            task_description = message.replace("add task", "").strip()
+            self.add_task(task_description)
+            return f"✅ Task '{task_description}' added."
+
+        elif message.startswith("complete task"):
+            task_description = message.replace("complete task", "").strip()
+            self.complete_task(task_description)
+            return f"✅ Task '{task_description}' marked as complete."
+
+        elif message == "view tasks":
+            self.view_tasks()
+            return "📋 Task list displayed."
+
+        elif message == "daily report":
+            self.daily_report()
+            return "📊 Daily report generated."
+
+        elif message == "dwightism":
+            self.dwightism()
+            return "💬 Dwight wisdom shared."
+
+        elif message.startswith("prank toggle"):
+            self.jimster.toggle_prank_mode()
+            return "🎭 Prank mode toggled."
+
+        else:
+            return "❌ Command not recognized."
+
+
     def load_dwight_quotes(self):
         try:
             self.cursor.execute("SELECT line_text FROM dwight_quotes")
