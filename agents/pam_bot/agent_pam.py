@@ -63,8 +63,8 @@ class PamBot:
 # Example usage
 if __name__ == "__main__":
     pam = PamBot()
-    user_input = "Add task to simplify PamBot"
-    user_id = "user_123"
+    user_input = "View Tasks"
+    user_id = "ani"
     session_id = "session_456"
     # Run the asynchronous route_requests method
     response = asyncio.run(pam.route_requests(user_input, user_id, session_id))
