@@ -7,7 +7,8 @@ import sys
 import os
 from datetime import datetime
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
-
+from multi_agent_orchestrator.types import ConversationMessage
+from typing import List, Optional, Dict
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -50,9 +51,29 @@ class SchruteBot(Agent):
         ''')
         self.conn.commit()
     
-    def process_request(self, message: str):
-        """Handles task-related requests for SchruteBot."""
-        message = message.lower().strip()
+    async def process_request(
+        self,
+        input_text: str,
+        user_id: str,
+        session_id: str,
+        chat_history: List[ConversationMessage],
+        additional_params: Optional[Dict[str, str]] = None
+    ) -> str:
+        """
+        Process task-related requests.
+
+        Args:
+            input_text (str): The user's input.
+            user_id (str): Unique identifier for the user.
+            session_id (str): Unique identifier for the session.
+            chat_history (List[ConversationMessage]): The conversation history.
+            additional_params (Optional[Dict[str, str]]): Additional request parameters.
+
+        Returns:
+            str: The response from SchruteBot.
+        """
+        message = input_text.lower().strip()
+        print(f"📌 SchruteBot received: {message}")
 
         if message.startswith("add task"):
             task_description = message.replace("add task", "").strip()
