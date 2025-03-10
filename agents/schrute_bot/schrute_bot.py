@@ -6,6 +6,9 @@ import hashlib
 import sys
 import os
 from datetime import datetime
+from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
+from multi_agent_orchestrator.types import ConversationMessage
+from typing import List, Optional, Dict
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -15,13 +18,22 @@ from agents.jimster.big_tuna import JimsterAgent
 
 DB_FILE = "schrutebot.db"
 
-class SchruteBot:
+class SchruteBot(Agent):
     def __init__(self):
+        options = AgentOptions(
+            name="SchruteBot",
+            description="Assistant for managing tasks with a Dwight Schrute persona.",
+            save_chat=True,
+            callbacks=AgentCallbacks(),
+            LOG_AGENT_DEBUG_TRACE=False
+        )
+        super().__init__(options)
         self.conn = sqlite3.connect(DB_FILE)
         self.cursor = self.conn.cursor()
         self.create_tables()
         self.idle_time = 0
         self.nudges = self.load_dwight_quotes()
+        self.keywords = ["task", "assign", "track", "complete", "project", "work"]
         self.mistral = MistralAgent()
         self.cached_quotes = self.load_dwight_quotes()
         self.jimster = JimsterAgent()
@@ -39,6 +51,60 @@ class SchruteBot:
         ''')
         self.conn.commit()
     
+    async def process_request(
+        self,
+        input_text: str,
+        user_id: str,
+        session_id: str,
+        chat_history: List[ConversationMessage],
+        additional_params: Optional[Dict[str, str]] = None
+    ) -> str:
+        """
+        Process task-related requests.
+
+        Args:
+            input_text (str): The user's input.
+            user_id (str): Unique identifier for the user.
+            session_id (str): Unique identifier for the session.
+            chat_history (List[ConversationMessage]): The conversation history.
+            additional_params (Optional[Dict[str, str]]): Additional request parameters.
+
+        Returns:
+            str: The response from SchruteBot.
+        """
+        message = input_text.lower().strip()
+        print(f"📌 SchruteBot received: {message}")
+
+        if message.startswith("add task"):
+            task_description = message.replace("add task", "").strip()
+            self.add_task(task_description)
+            return f"✅ Task '{task_description}' added."
+
+        elif message.startswith("complete task"):
+            task_description = message.replace("complete task", "").strip()
+            self.complete_task(task_description)
+            return f"✅ Task '{task_description}' marked as complete."
+
+        elif message == "view tasks":
+            self.view_tasks()
+            return "📋 Task list displayed."
+
+        elif message == "daily report":
+            self.daily_report()
+            return "📊 Daily report generated."
+
+        elif message == "dwightism":
+            self.dwightism()
+            return "💬 Dwight wisdom shared."
+
+        elif message.startswith("prank toggle"):
+            self.jimster.toggle_prank_mode()
+            return "🎭 Prank mode toggled."
+
+        else:
+            return "❌ Command not recognized."
+
+
     def load_dwight_quotes(self):
         try:
             self.cursor.execute("SELECT line_text FROM dwight_quotes")
