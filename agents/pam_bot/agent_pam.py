@@ -18,6 +18,7 @@ class PamBot:
         self.schrute_bot = SchruteBot()
         self.jimster_agent = JimsterAgent()
         self.classifier = MistralClassifier()
+        
 
         # Initialize Orchestrator
         self.DEFAULT_CONFIG = OrchestratorConfig(
@@ -34,12 +35,14 @@ class PamBot:
                                                 GENERAL_ROUTING_ERROR_MSG_MESSAGE="An error occurred while processing your request. Please try again later."
                                                 )
         self.orchestrator = MultiAgentOrchestrator(options=self.DEFAULT_CONFIG, classifier=self.classifier)
-    
+        self.register_agents()
+
     # Register agents    
     def register_agents(self):
         """Registers all available agents."""
         agents = [self.schrute_bot, self.jimster_agent]
-        
+        for agent in agents:
+            print(f"Type: {type(agent)}, Value: {agent}")
         # Pass agents list to the classifier before adding them
         self.classifier.set_agents(agents)
         

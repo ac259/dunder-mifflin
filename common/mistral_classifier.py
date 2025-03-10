@@ -2,12 +2,39 @@ from multi_agent_orchestrator.classifiers import Classifier, ClassifierResult
 from common.mistral_agent import MistralAgent
 from typing import List, Optional, Dict
 from multi_agent_orchestrator.types import ConversationMessage
-
+from multi_agent_orchestrator.agents import Agent
 
 class MistralClassifier(Classifier):
     def __init__(self):
         super().__init__()
         self.mistral_agent = MistralAgent()  # Initialize your Mistral agent here
+        self.agents = []
+
+    def set_agents(self, agents: List[Agent]):
+        """Override set_agents to store agent information"""
+        if isinstance(agents, dict):  # If somehow agents were passed as a dict, extract values
+            agents = list(agents.values())
+
+        if not all(isinstance(agent, Agent) for agent in agents):
+            raise TypeError(f"Expected a list of Agent objects, but got {type(agents)} with values: {agents}")
+
+        self.agents = agents  # ✅ Now storing a list
+        print(f"✅ Agents set in MistralClassifier: {self.agents}")
+
+        for agent in self.agents:
+            print(f"- {agent.name}: {agent.description}")
+
+    
+    def get_agents_descriptions(self) -> str:
+        """Returns formatted descriptions of registered agents"""
+        if not self.agents:
+            return "No agents available."
+
+        return "\n".join([
+            f"- {agent.name}: {agent.description} (Handles: {', '.join(getattr(agent, 'keywords', ['General tasks']))})"
+            for agent in self.agents
+        ])
+
 
     async def classify(self, user_input, chat_history):
         # Prepare a prompt for the Mistral model to determine the appropriate agent
@@ -20,7 +47,6 @@ class MistralClassifier(Classifier):
         
         Which agent is best suited to handle this input? Provide only the agent's name.
         """
-
         # Use the Mistral agent to generate a response
         response = self.mistral_agent.generate_response(prompt).strip()
 
@@ -32,12 +58,6 @@ class MistralClassifier(Classifier):
         # If no matching agent is found, return a default response
         return ClassifierResult(selected_agent=None, confidence=0.0)
 
-    def get_agents_descriptions(self):
-        # Helper method to format agents' descriptions for the prompt
-        descriptions = ""
-        for agent in self.agents:
-            descriptions += f"- {agent.name}: {agent.description}\n"
-        return descriptions
 
     async def process_request(
         self,

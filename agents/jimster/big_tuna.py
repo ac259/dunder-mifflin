@@ -17,6 +17,7 @@ class JimsterAgent(Agent):
         )
         super().__init__(options)
         config = self.load_config()
+        self.keywords = ["prank", "joke", "fake task", "trick", "mischief", "fun"] 
         self.prank_mode = config["prank_mode"]
         self.prank_probability = config["prank_probability"]
         self.fake_task_probability = config["fake_task_probability"]

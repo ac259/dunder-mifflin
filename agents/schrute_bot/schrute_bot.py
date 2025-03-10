@@ -32,6 +32,7 @@ class SchruteBot(Agent):
         self.create_tables()
         self.idle_time = 0
         self.nudges = self.load_dwight_quotes()
+        self.keywords = ["task", "assign", "track", "complete", "project", "work"]
         self.mistral = MistralAgent()
         self.cached_quotes = self.load_dwight_quotes()
         self.jimster = JimsterAgent()
