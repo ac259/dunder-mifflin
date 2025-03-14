@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from common.mistral_agent import MistralAgent
 from agents.jimster.big_tuna import JimsterAgent
 from agents.schrute_bot.schrute_bot import SchruteBot
+from agents.darryl_coding_agent.darryls_tech_warehouse import DarrylBot
 from common.mistral_classifier import MistralClassifier
 
 class PamBot:
@@ -17,6 +18,7 @@ class PamBot:
         self.mistral = MistralAgent()
         self.schrute_bot = SchruteBot()
         self.jimster_agent = JimsterAgent()
+        self.darryl_agent = DarrylBot()
         self.classifier = MistralClassifier()
         
 
@@ -40,7 +42,10 @@ class PamBot:
     # Register agents    
     def register_agents(self):
         """Registers all available agents."""
-        agents = [self.schrute_bot, self.jimster_agent]
+        agents = [self.schrute_bot, 
+                  self.jimster_agent,
+                  self.darryl_agent
+                  ]
         for agent in agents:
             print(f"Type: {type(agent)}, Value: {agent}")
         # Pass agents list to the classifier before adding them
@@ -63,7 +68,7 @@ class PamBot:
 # Example usage
 if __name__ == "__main__":
     pam = PamBot()
-    user_input = "View Tasks"
+    user_input = "Generate code in python to create an agent that can integrate with MCP + Git."
     user_id = "ani"
     session_id = "session_456"
     # Run the asynchronous route_requests method
