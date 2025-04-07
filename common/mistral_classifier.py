@@ -3,6 +3,17 @@ from common.mistral_agent import MistralAgent
 from typing import List, Optional, Dict
 from multi_agent_orchestrator.types import ConversationMessage
 from multi_agent_orchestrator.agents import Agent
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.CRITICAL)  # You can set this dynamically later
+
+# Optional: only if not already configured elsewhere
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+    )
 
 class MistralClassifier(Classifier):
     def __init__(self):
@@ -19,10 +30,10 @@ class MistralClassifier(Classifier):
             raise TypeError(f"Expected a list of Agent objects, but got {type(agents)} with values: {agents}")
 
         self.agents = agents  # ✅ Now storing a list
-        print(f"✅ Agents set in MistralClassifier: {self.agents}")
+        logger.debug(f"✅ Agents set in MistralClassifier: {self.agents}")
 
         for agent in self.agents:
-            print(f"- {agent.name}: {agent.description}")
+            logger.debug(f"- {agent.name}: {agent.description}")
 
     
     def get_agents_descriptions(self) -> str:
