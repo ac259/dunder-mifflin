@@ -24,6 +24,52 @@ Think of it as an AI Dwight Schrute: hyper-efficient, knowledgeable, and occasio
     python main.py
     ```
 
+## Running the CLI
+
+```bash
+python cli/dunder_cli.py
+```
+
+### Usage
+
+```plaintext
+/agents        # Show all available agents
+/use jim       # Talk in Jim's voice
+/use darryl    # Ask coding questions
+/history       # View previous interactions
+/exit          # Leave the office
+```
+
+Or just typing Natural Language
+
+```plaintext
+[PAM] > generate code for adding two numbers in python
+```
+
+### Example Interaction
+
+```plaintext
+[PAM] > generate code for adding two numbers in python
+
+def add_numbers(x, y):
+    """Adds two numbers."""
+    return x + y
+
+# Example
+print(add_numbers(10, 5))  # Output: 15
+```
+
+## 🧪 Agent Roles
+
+```plaintext
+| Agent         | Role                                                           |
+|---------------|----------------------------------------------------------------|
+| **Pam**       | Orchestrates and routes user queries intelligently             |
+| **SchruteBot**| Task manager, disciplinarian, Dwightisms included              |
+| **JimsterAgent** | Mischief-maker. May put your request in Jell-O             |
+| **DarrylAgent** | Code writer, debugger, warehouse genius                      |
+```
+
 ## Documentation
 
 For detailed information on the architecture, agents, and folder structure, please refer to our [documentation](docs).
