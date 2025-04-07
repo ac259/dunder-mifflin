@@ -1,4 +1,24 @@
-# dunder-mifflin
+```ansi
+        ╔═════════════════════════════════════════════════════════════════════╗
+        ║                                                                     ║
+        ║  ██████╗ ██╗   ██╗███╗   ██╗██████╗ ███████╗██████╗                 ║
+        ║  ██╔══██╗██║   ██║████╗  ██║██╔══██╗██╔════╝██╔══██╗                ║
+        ║  ██║  ██║██║   ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝                ║
+        ║  ██║  ██║██║   ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗                ║
+        ║  ██████╔╝╚██████╔╝██║ ╚████║██████╔╝███████╗██║  ██║                ║
+        ║  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝                ║
+        ║                                                                     ║
+        ║  ███╗   ███╗██╗███████╗███████╗██╗     ██╗███╗   ██╗                ║
+        ║  ████╗ ████║██║██╔════╝██╔════╝██║     ██║████╗  ██║                ║
+        ║  ██╔████╔██║██║█████╗  █████╗  ██║     ██║██╔██╗ ██║                ║
+        ║  ██║╚██╔╝██║██║██╔══╝  ██╔══╝  ██║     ██║██║╚██╗██║                ║
+        ║  ██║ ╚═╝ ██║██║██║     ██║     ███████╗██║██║ ╚████║                ║
+        ║  ╚═╝     ╚═╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝                ║
+        ║                                                                     ║
+        ║  DUNDER MIFFLIN TERMINAL                                            ║
+        ║  Unlimited paper in a paperless world                               ║
+        ╚═════════════════════════════════════════════════════════════════════╝
+```
 
 Inspired by The Office, Dunder Mifflin AI is an agentic system designed to bring a mix of humor and efficiency to your everyday tasks. 
 Whether it’s scheduling meetings (without double-booking like Michael Scott), managing emails (unlike Kevin’s famous chili disaster), or even delivering sarcastic but useful productivity insights à la Jim Halpert,
