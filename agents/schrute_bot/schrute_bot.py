@@ -9,9 +9,9 @@ from datetime import datetime
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
-from rich.table import Table
 from rich.console import Console
-from rich.text import Text
+from rich.table import Table
+from io import StringIO
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -142,7 +142,7 @@ class SchruteBot(Agent):
         print("*Dwight's commentary is loading...*")
         time.sleep(1)
         print(self.generate_dynamic_response("add_task", context))
-    
+
     def view_tasks(self):
         self.cursor.execute("""
             SELECT description, status, priority 
@@ -155,13 +155,12 @@ class SchruteBot(Agent):
         tasks = self.cursor.fetchall()
 
         if not tasks:
-            print("📋 **Task List Report - SchruteBot**\n\nNo tasks found. Productivity is the backbone of civilization!")
-            return
+            return "📋 **Task List Report - SchruteBot**\n\nNo tasks found. Productivity is the backbone of civilization!"
 
         tasks = self.jimster.prank_task_list(tasks)
-        console = Console()
-        table = Table(title="📋 Task List Report - SchruteBot", style="bold white")
 
+        # build the rich table
+        table = Table(title="📋 Task List Report - SchruteBot", style="bold white")
         table.add_column("Description", style="bold cyan", no_wrap=True)
         table.add_column("Status", style="bold yellow")
         table.add_column("Priority", style="bold magenta")
@@ -179,12 +178,15 @@ class SchruteBot(Agent):
             icon = priority_icons.get(priority, "")
             table.add_row(f"{icon} {cleaned_desc}", status, priority)
 
+        # Render Rich output to a string
+        rich_output = StringIO()
+        console = Console(file=rich_output, force_terminal=True, color_system="truecolor")
         console.print(table)
 
         context = "Provide a sarcastic but insightful comment about the current workload."
-        print("*Dwight's commentary is loading...*")
-        time.sleep(1)
-        print(f"\n*Dwight's commentary:* {self.generate_dynamic_response('view_tasks', context)}")
+        commentary = self.generate_dynamic_response('view_tasks', context)
+
+        return rich_output.getvalue() + f"\n\n💬 *{commentary}*"
 
     
     def complete_task(self, task):
