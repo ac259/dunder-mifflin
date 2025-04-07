@@ -39,9 +39,6 @@ class DunderAgentUI(App):
         ("tab", "toggle_sidebar", "Toggle Agent Panel"),
     ]
 
-    selected_agent = reactive("pambot")
-    sidebar_visible = reactive(True)
-
     def __init__(self):
         super().__init__()
         self.pambot = PamBot()
@@ -58,6 +55,8 @@ class DunderAgentUI(App):
         yield Footer()
 
     async def on_mount(self) -> None:
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
         agents = []
         try:
             orchestrator = getattr(self.pambot, 'orchestrator', None)
@@ -119,12 +118,10 @@ class DunderAgentUI(App):
 
             if code_block:
                 lang, code = code_block
-                self.interaction_log.write(Text("Pam wrote some code:", style="bold #81b29a"))
-                code_box = CodeResponseBox(code=code, language=lang)
-                await self.mount(code_box, after=self.interaction_log)
-            else:
-                self.interaction_log.write(Text.from_markup(str(output)))
-
+                self.interaction_log.write(Text("🤖 Pam wrote some code:", style="bold magenta"))
+                textarea = TextArea(code, language=lang, read_only=True, id="code-output", classes=f"language-{lang}") # Add classes here
+                textarea.styles.height = 12
+                await self.mount(textarea, after=self.interaction_log)
         except Exception as e:
             self.log.error(f"Error during agent request: {e}")
             self.interaction_log.write(Text(f"Error processing command: {e}", style="bold red"))
@@ -144,8 +141,7 @@ class DunderAgentUI(App):
         self.set_focus(self.command_box)
 
     def action_toggle_sidebar(self) -> None:
-        self.sidebar_visible = not self.sidebar_visible
-        self.agent_panel.display = self.sidebar_visible
+        self.agent_panel.styles.display = "block" if self.agent_panel.styles.display == "none" else "none"
 
 if __name__ == "__main__":
     app = DunderAgentUI()

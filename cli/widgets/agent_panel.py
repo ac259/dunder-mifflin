@@ -1,4 +1,3 @@
-# cli/widgets/agent_panel.py
 from textual.containers import Vertical
 from textual.widgets import Label, ListView, ListItem
 from textual.app import ComposeResult

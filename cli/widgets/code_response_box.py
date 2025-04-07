@@ -15,7 +15,8 @@ class CodeResponseBox(Vertical):
             self.code,
             language=self.language,
             read_only=True,
-            id="code-output"
+            id="code-output",
+            classes=f"language-{self.language}"
         )
         self.text_area.styles.height = 12
         yield self.text_area
@@ -23,6 +24,11 @@ class CodeResponseBox(Vertical):
         with Horizontal(id="code-controls"):
             yield Button("Copy", id="copy-button")
             yield Button("Edit", id="edit-button")
+
+    def on_mount(self) -> None:
+        self.app.log.info(f"CodeResponseBox mounted with language: {self.language}")
+        self.app.log.info(f"TextArea styles: {self.text_area.styles}")
+        self.app.log.info(f"TextArea classes: {self.text_area.classes}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "copy-button":
