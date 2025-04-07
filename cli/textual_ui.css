@@ -1,89 +1,33 @@
-/* textual_ui.css - Revised */
-
 Screen {
-    /* Let containers manage layout, remove top-level layout */
-    /* layout: vertical; */
+    background: #1e1e1e;
+    color: #d4d4d4;
 }
 
-Header {
-    dock: top;
-    height: 1;
-    background: $accent;
-    color: $text;
-
-}
-
-Footer {
-    dock: bottom;
-    height: 1;
-    background: $accent;
-    color: $text;
-}
-
-/* Main content area layout */
-#main-container {
-    /* Arrange sidebar and log horizontally */
-    layout: horizontal;
-    width: 100%;
-    height: 1fr; /* Fill space between header/footer */
-    grid-gutter: 1 2; /* Add gutter between sidebar and log */
+Header, Footer {
+    background: #2d2d2d;
+    color: #ffffff;
 }
 
 #sidebar {
-    width: 30%; /* Take 30% of the horizontal space */
-    height: 100%; /* Fill vertical space in the container */
-    padding: 1;
-    border: round yellow;
-    background: $panel;
+    background: #252526;
+    border: round #3c3c3c;
 }
 
-/* Target the correct ID from Python */
 #interaction-log {
-    width: 1fr; /* Take remaining horizontal space */
-    height: 100%; /* Fill vertical space */
-    padding: 1;
-    border: round green;
-    background: $boost;
-    /* content-align and overflow handled by RichLog widget itself */
+    background: #1e1e1e;
+    border: round #007acc;
 }
 
-/* Target the correct ID and fix padding */
 #command-box {
-    dock: bottom;
-    height: 3;
-    /* padding: 1; */ /* Removed problematic padding */
-    padding: 0 1;   /* Optional: Add horizontal padding only */
-    border: round blue;
-    background: $background;
-    margin: 1 0 0 0; /* Add a little space above the footer */
-}
-
-/* Focus styling for input */
-#command-box:focus {
-     border: round $accent; /* Highlight border on focus */
-}
-
-
-Label#section-title {
-    text-style: bold;
-    width: 100%; /* Ensure it takes full width for centering */
-    text-align: center; /* Use text-align instead */
-    margin-bottom: 1;
-    /* content-align is usually for container contents */
-}
-
-/* Optional: Style for selected item in the agent list */
-#agent-list-view > ListItem.--highlight {
-    background: $accent-darken-1;
-}
-#agent-list-view:focus > ListItem.--highlight {
-     background: $accent;
+    background: #2d2d2d;
+    border: round #007acc;
+    color: #ffffff;
 }
 
 #code-output {
-    height: 12;
-    border: round red;
-    background: $panel;
+    background: #1e1e1e;
+    border: round #6a9955;
     padding: 1;
     margin: 1 0;
+    height: 12;
 }
