@@ -3,100 +3,178 @@ import os
 import asyncio
 import logging
 
-# Silence logs before any other imports
+# Configure logging (optional: adjust level or add file output)
 logging.basicConfig(level=logging.CRITICAL)
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
-from textual.widgets import Header, Footer, Input, Static, ListView, ListItem, Label
+from textual.widgets import Header, Footer, Input, ListView, ListItem, Label, RichLog, TextArea
 from textual.reactive import reactive
 from rich.text import Text
 
-# Ensure project root is in sys.path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# --- Project Path Setup ---
+script_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(script_dir, ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
-from agents.pam_bot.agent_pam import PamBot  # Hook into real agent logic
+# --- Agent Import ---
+try:
+    from agents.pam_bot.agent_pam import PamBot
+except ImportError as e:
+    print("Fatal Error: Could not import PamBot from agents.pam_bot.agent_pam.", file=sys.stderr)
+    print(f"Reason: {e}", file=sys.stderr)
+    sys.exit(1)
 
-class AgentList(Static):
+# --- Custom Widgets ---
+
+class AgentList(Container):
     def compose(self) -> ComposeResult:
         yield Label("Agents", id="section-title")
-        self.list_view = ListView()
+        self.list_view = ListView(id="agent-list-view")
         yield self.list_view
 
-    def update_agents(self, agents):
+    def on_mount(self) -> None:
+        pass
+
+    def update_agents(self, agents: list[str]):
         self.list_view.clear()
-        for agent_name in ["pambot"] + agents:  # Ensure PamBot is listed first
+        all_display_agents = ["pambot"] + [a for a in agents if a != "pambot"]
+        for agent_name in all_display_agents:
             list_item = ListItem(Label(agent_name))
-            list_item.data = agent_name  # Store agent name in data attribute
+            list_item.data = agent_name
             self.list_view.append(list_item)
 
-class TaskPanel(Static):
-    agent = reactive("pambot")
-
-    async def update_tasks(self, message):
-        response = await self.app.pambot.route_requests(message, user_id="ui_user", session_id="ui_session")
-        print("[UI] Response from PamBot:", response)  # Debug print
-        output = getattr(response, "output", "No response.")
-        self.update(Text.from_markup(output))
+class InteractionLog(RichLog):
+    def __init__(self, **kwargs):
+        super().__init__(highlight=False, markup=True, wrap=True, **kwargs)
+        self.border_title = "Conversation Log"
 
 class CommandBox(Input):
-    def __init__(self):
-        super().__init__(placeholder="💬 Type a command (e.g. 'view tasks') and press Enter")
-        self.can_focus = True
-        self.focus()
-        self.styles.height = 3
-        self.styles.border = ("round", "blue")
-        self.styles.margin = (0, 1)
-        self.styles.padding = (0, 1)
+    def __init__(self, **kwargs):
+        super().__init__(placeholder="💬 Type your message to Pam and press Enter...", **kwargs)
+
+# --- Main App ---
 
 class DunderAgentUI(App):
-
-    async def on_ready(self):
-        self.set_focus(self.command_box)
     CSS_PATH = "textual_ui.css"
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("tab", "focus_next", "Next"),
+        ("ctrl+l", "clear_log", "Clear Log"),
     ]
+
+    selected_agent = reactive("pambot")
+
+    def __init__(self):
+        super().__init__()
+        self.pambot = PamBot()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Container():
+        with Container(id="main-container"):
             with Vertical(id="sidebar"):
                 self.agent_list = AgentList()
                 yield self.agent_list
-            self.task_panel = TaskPanel()
-            yield self.task_panel
-        self.command_box = CommandBox()
+            self.interaction_log = InteractionLog(id="interaction-log")
+            yield self.interaction_log
+        self.command_box = CommandBox(id="command-box")
         yield self.command_box
         yield Footer()
 
-    async def on_mount(self):
-        self.pambot = PamBot()
-        if hasattr(self.pambot.orchestrator, 'list_agents'):
-            agents = self.pambot.orchestrator.list_agents()
-        else:
-            agents = [a if isinstance(a, str) else getattr(a, 'name', str(a)) for a in self.pambot.orchestrator.agents]
+    def detect_code(self, text: str) -> tuple[str, tuple[str, str] | None]:
+        """Detects and extracts code blocks or infers them from structure."""
+        import re
+        match = re.search(r"```(\w+)?\n(.*?)```", text, re.DOTALL)
+        if match:
+            lang = match.group(1) or "text"
+            code = match.group(2).strip()
+            cleaned = re.sub(r"```.*?```", "", text, flags=re.DOTALL).strip()
+            return cleaned, (lang, code)
+        if any(kw in text for kw in ["def ", "class ", "{", "}", ";", "import ", "from ", "return "]):
+            return "", ("python", text.strip())
+        return text, None
 
-        print("[UI] Agents loaded:", agents)
-        self.agent_list.update_agents(agents or ["TestBot", "FakeAgent"])
-        self.agent_list.list_view.index = 0
-        self.task_panel.agent = "pambot"
-        self.task_panel.update(Text.from_markup("👋 Welcome! Select an agent or enter a command below."))
-        self.call_after_refresh(lambda: self.set_focus(self.command_box))
+    async def on_mount(self) -> None:
+        agents = []
+        try:
+            if hasattr(self.pambot, 'orchestrator'):
+                orchestrator = self.pambot.orchestrator
+                if hasattr(orchestrator, 'list_agents') and callable(orchestrator.list_agents):
+                    agents = orchestrator.list_agents()
+                elif hasattr(orchestrator, 'agents'):
+                    agents = [
+                        a if isinstance(a, str) else getattr(a, 'name', str(a))
+                        for a in orchestrator.agents
+                    ]
+                else:
+                    self.log.warning("Orchestrator found, but has no 'list_agents' method or 'agents' attribute.")
+                    agents = ["UnknownAgent"]
+            else:
+                self.log.warning("PamBot instance has no 'orchestrator' attribute.")
+                agents = ["NoOrchestrator"]
 
-    async def on_list_view_selected(self, event: ListView.Selected):
-        selected_agent = str(event.item.data)
-        self.task_panel.agent = selected_agent
-        self.task_panel.update(Text.from_markup(f"🔹 Selected agent: {selected_agent}"))
+            if not isinstance(agents, list):
+                self.log.warning(f"Agent list retrieved was not a list ({type(agents)}), using fallback.")
+                agents = ["FallbackAgent"]
 
-    async def on_input_submitted(self, event: Input.Submitted):
+        except Exception as e:
+            self.log.error(f"Error getting agent list from orchestrator: {e}")
+            agents = ["ErrorAgent"]
+
+        self.agent_list.update_agents(agents)
+        self.set_focus(self.command_box)
+        self.interaction_log.write(Text("👋 Welcome to the Dunder Mifflin Agent Interface!", style="bold green"))
+        self.interaction_log.write("Type your requests for Pam in the box below.")
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        agent_name = str(event.item.data)
+        self.selected_agent = agent_name
+        self.log.info(f"Agent selected in list: {agent_name}")
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
         command = event.value.strip()
-        print("[UI] Command submitted:", command)
-        response = await self.pambot.route_requests(command, user_id="ui_user", session_id="ui_session")
-        output = getattr(response, "output", "No response.")
-        self.task_panel.update(Text.from_markup(output))
-        self.command_box.value = ""
+        if not command:
+            return
+
+        self.interaction_log.write(Text(f"👤 You: {command}", style="bold blue"))
+        self.command_box.disabled = True
+        self.command_box.placeholder = "⏳ Pam is processing..."
+
+        try:
+            response = await self.pambot.route_requests(
+                message=command,
+                user_id="tui_user",
+                session_id="tui_session_0"
+            )
+            output = getattr(response, "output", "*No response text found.*")
+            cleaned, code_block = self.detect_code(str(output))
+
+            if code_block:
+                lang, code = code_block
+                self.interaction_log.write(Text("🤖 Pam wrote some code:", style="bold magenta"))
+                textarea = TextArea(code, language=lang, read_only=True, id="code-output")
+                textarea.styles.height = 12
+                await self.mount(textarea, after=self.interaction_log)
+            else:
+                self.interaction_log.write(Text(f"🤖 Pam: {cleaned}", style="bold magenta"))
+
+        except Exception as e:
+            self.log.error(f"Error during agent request: {e}")
+            self.interaction_log.write(Text(f"❌ Error processing command: {e}", style="bold red"))
+
+        finally:
+            self.command_box.value = ""
+            self.command_box.disabled = False
+            self.command_box.placeholder = "💬 Type your message to Pam and press Enter..."
+            self.set_focus(self.command_box)
+
+    def action_quit(self) -> None:
+        self.exit()
+
+    def action_clear_log(self) -> None:
+        self.interaction_log.clear()
+        self.interaction_log.write(Text("🧹 Log cleared.", style="italic"))
+        self.set_focus(self.command_box)
 
 if __name__ == "__main__":
     app = DunderAgentUI()
