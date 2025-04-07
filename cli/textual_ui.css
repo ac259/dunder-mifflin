@@ -8,14 +8,25 @@ Header, Footer {
     color: #ffffff;
 }
 
+#main-container {
+    layout: horizontal;
+    height: 1fr;
+    width: 100%;
+}
+
 #sidebar {
+    width: 30%;
+    height: 100%;
+    border: round yellow;
     background: #252526;
-    border: round #3c3c3c;
 }
 
 #interaction-log {
+    width: 1fr;
+    height: 100%;
     background: #1e1e1e;
     border: round #007acc;
+    padding: 1;
 }
 
 #command-box {
@@ -25,9 +36,16 @@ Header, Footer {
 }
 
 #code-output {
-    background: #1e1e1e;
-    border: round #6a9955;
+    height: 12;
     padding: 1;
     margin: 1 0;
-    height: 12;
+    background: #1e1e1e;
+    border: round #6a9955;
+}
+
+
+#code-controls {
+    dock: bottom;
+    padding: 0 1;
+    margin-top: 1;
 }
