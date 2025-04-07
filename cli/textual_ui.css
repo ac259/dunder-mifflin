@@ -1,0 +1,41 @@
+/* textual_ui.css */
+
+Screen {
+    layout: vertical;
+}
+
+Header, Footer {
+    dock: top;
+}
+
+#sidebar {
+    width: 30%;
+    height: 1fr;
+    padding: 1;
+    border: round yellow;
+    background: $panel;
+}
+
+TaskPanel {
+    height: 1fr;
+    width: 70%;
+    padding: 1;
+    border: round green;
+    background: $boost;
+    content-align: left top;
+    overflow-y: auto;
+}
+
+CommandBox {
+    dock: bottom;
+    height: 3;
+    padding: 1;
+    border: round blue;
+    background: $background;
+}
+
+Label#section-title {
+    text-style: bold;
+    content-align: center middle;
+    margin-bottom: 1;
+}
