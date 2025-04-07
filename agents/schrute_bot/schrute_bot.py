@@ -9,6 +9,7 @@ from datetime import datetime
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
+from tabulate import tabulate
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -141,7 +142,14 @@ class SchruteBot(Agent):
         print(self.generate_dynamic_response("add_task", context))
     
     def view_tasks(self):
-        self.cursor.execute("SELECT description, status, priority FROM tasks ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+        self.cursor.execute("""
+            SELECT description, status, priority 
+            FROM tasks 
+            ORDER BY CASE priority 
+                WHEN 'high' THEN 1 
+                WHEN 'medium' THEN 2 
+                ELSE 3 END
+        """)
         tasks = self.cursor.fetchall()
 
         if not tasks:
@@ -149,13 +157,16 @@ class SchruteBot(Agent):
             return
 
         tasks = self.jimster.prank_task_list(tasks)  # Jimster may alter task descriptions
-        task_list = "\n".join([f"🔹 **{desc}** *(Priority: {priority.upper()}, Status: {status})*" for desc, status, priority in tasks])
-        print(f"📋 **Task List Report - SchruteBot**\n\nHere are your current assigned tasks:\n{task_list}\n")
+        headers = ["Description", "Status", "Priority"]
+        task_table = tabulate(tasks, headers, tablefmt="fancy_grid")
+
+        print(f"📋 **Task List Report - SchruteBot**\n\n{task_table}\n")
         
         context = "Provide a sarcastic but insightful comment about the current workload."
         print("*Dwight's commentary is loading...*")
         time.sleep(1)
         print(f"\n*Dwight's commentary:* {self.generate_dynamic_response('view_tasks', context)}")
+
     
     def complete_task(self, task):
         task_hash = self.generate_hash(task)
