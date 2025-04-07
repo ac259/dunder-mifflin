@@ -9,7 +9,9 @@ from datetime import datetime
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
-from tabulate import tabulate
+from rich.table import Table
+from rich.console import Console
+from rich.text import Text
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -156,12 +158,29 @@ class SchruteBot(Agent):
             print("📋 **Task List Report - SchruteBot**\n\nNo tasks found. Productivity is the backbone of civilization!")
             return
 
-        tasks = self.jimster.prank_task_list(tasks)  # Jimster may alter task descriptions
-        headers = ["Description", "Status", "Priority"]
-        task_table = tabulate(tasks, headers, tablefmt="fancy_grid")
+        tasks = self.jimster.prank_task_list(tasks)
+        console = Console()
+        table = Table(title="📋 Task List Report - SchruteBot", style="bold white")
 
-        print(f"📋 **Task List Report - SchruteBot**\n\n{task_table}\n")
-        
+        table.add_column("Description", style="bold cyan", no_wrap=True)
+        table.add_column("Status", style="bold yellow")
+        table.add_column("Priority", style="bold magenta")
+
+        priority_icons = {
+            "HIGH": "🔥",
+            "MEDIUM": "📌",
+            "LOW": "🧊"
+        }
+
+        for desc, status, priority in tasks:
+            cleaned_desc = desc.lstrip(": ").capitalize()
+            status = status.upper()
+            priority = priority.upper()
+            icon = priority_icons.get(priority, "")
+            table.add_row(f"{icon} {cleaned_desc}", status, priority)
+
+        console.print(table)
+
         context = "Provide a sarcastic but insightful comment about the current workload."
         print("*Dwight's commentary is loading...*")
         time.sleep(1)
