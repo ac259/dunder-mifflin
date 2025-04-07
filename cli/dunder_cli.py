@@ -5,8 +5,10 @@ import time
 import readline
 import random
 import logging
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import textwrap
+import re
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from cli.agent_connector import AgentConnector
 
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -33,7 +35,7 @@ TYPING_CHARS = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]
 class DunderMifflinCLI:
     def __init__(self):
         self.connector = AgentConnector()
-        self.current_agent = "pam"  # default for flavor, Pam always routes
+        self.current_agent = "pam"
         self.session_id = f"session_{int(time.time())}"
         self.history = []
 
@@ -56,8 +58,8 @@ class DunderMifflinCLI:
         ║  ██║ ╚═╝ ██║██║██║     ██║     ███████╗██║██║ ╚████║                ║
         ║  ╚═╝     ╚═╝╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝                ║
         ║                                                                     ║
-        ║  {Colors.BOLD}DUNDER MIFFLIN TERMINAL {Colors.ENDC}{Colors.BLUE}    ║
-        ║  {Colors.ENDC}Unlimited paper in a paperless world     {Colors.BLUE}║
+        ║  {Colors.BOLD}DUNDER MIFFLIN TERMINAL{Colors.ENDC}{Colors.BLUE}                            ║
+        ║  {Colors.ENDC}Unlimited paper in a paperless world                           {Colors.BLUE}║
         ╚═════════════════════════════════════════════════════════════════════╝
         {Colors.ENDC}
         """
@@ -72,6 +74,30 @@ class DunderMifflinCLI:
         sys.stdout.write("\r" + " " * 40 + "\r")
         sys.stdout.flush()
 
+    def format_response(self, text):
+        """Format agent response for terminal display."""
+        text = text.encode().decode("unicode_escape")
+
+        if "```" in text:
+            parts = re.split(r"```(?:\w+)?", text)
+            for i, part in enumerate(parts):
+                if i % 2 == 0:
+                    # Format non-code text
+                    for line in part.strip().split("\n"):
+                        # Highlight bold
+                        line = re.sub(r"\*\*(.*?)\*\*", f"{Colors.BOLD}\\1{Colors.ENDC}", line)
+                        print(textwrap.fill(line, width=80))
+                    print()
+                else:
+                    print(f"{Colors.CYAN}```python{Colors.ENDC}")
+                    print(f"{Colors.GREEN}{part.strip()}{Colors.ENDC}")
+                    print(f"{Colors.CYAN}```{Colors.ENDC}\n")
+        else:
+            for line in text.strip().split("\n"):
+                line = re.sub(r"\*\*(.*?)\*\*", f"{Colors.BOLD}\\1{Colors.ENDC}", line)
+                print(textwrap.fill(line, width=80))
+
+
     def run(self):
         self.print_logo()
         print(f"{Colors.GREEN}Type '/agents' to list characters, '/use [agent]', or just ask something...{Colors.ENDC}\n")
@@ -84,7 +110,6 @@ class DunderMifflinCLI:
                 if not query:
                     continue
 
-                # Handle special commands
                 if query.startswith("/"):
                     if query == "/exit":
                         print(f"{Colors.YELLOW}Goodbye! Remember: identity theft is not a joke.{Colors.ENDC}")
@@ -105,26 +130,28 @@ class DunderMifflinCLI:
                     elif query == "/history":
                         for entry in self.history:
                             print(f"\n📝 You: {entry['query']}")
-                            print(f"🤖 {entry['agent']}: {entry['response']}")
+                            print(f"🤖 {entry['agent']}:")
+                            self.format_response(entry['response'])
                         continue
                     else:
                         print(f"{Colors.RED}Unknown command.{Colors.ENDC}")
                         continue
 
-                # Show "typing" animation
                 self.typing_animation(self.current_agent)
 
-                # Route query to backend via Pam
                 success, response = self.connector.call_agent(self.current_agent, query)
                 if not success:
                     print(f"{Colors.RED}Error: {response}{Colors.ENDC}")
                 else:
+                    output = getattr(response, "output", response)
                     self.history.append({
                         "agent": self.current_agent.capitalize(),
                         "query": query,
-                        "response": response
+                        "response": output
                     })
-                    print(f"\n{AGENT_COLORS.get(self.current_agent.capitalize(), Colors.ENDC)}{response}{Colors.ENDC}\n")
+                    print(f"\n{AGENT_COLORS.get(self.current_agent.capitalize(), Colors.ENDC)}")
+                    self.format_response(output)
+                    print(Colors.ENDC + "\n" + "─" * 80)
 
             except KeyboardInterrupt:
                 print(f"\n{Colors.YELLOW}Interrupted. Use /exit to quit.{Colors.ENDC}")
