@@ -7,12 +7,13 @@ from multi_agent_orchestrator.agents import Agent
 
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from common.mistral_agent import MistralAgent
+from common.gemma_agent import GemmaAgent
 from agents.jimster.big_tuna import JimsterAgent
 from agents.schrute_bot.schrute_bot import SchruteBot
 from agents.darryl_coding_agent.darryls_tech_warehouse import DarrylBot
 from agents.oscar.agent_oscar import OscarAgent
-from common.mistral_classifier import MistralClassifier
+from common.gemma_classifier import GemmaClassifier
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)  # You can set this dynamically later
@@ -27,12 +28,14 @@ if not logging.getLogger().handlers:
 class PamBot:
     def __init__(self, log_verbose: bool = True):
         # Initialize Mistral LLM
-        self.mistral = MistralAgent()
+        # self.mistral = MistralAgent()
+        self.gemma = GemmaAgent()
         self.schrute_bot = SchruteBot()
         self.jimster_agent = JimsterAgent()
         self.darryl_agent = DarrylBot()
         self.oscar_agent = OscarAgent()
-        self.classifier = MistralClassifier()
+        # self.classifier = MistralClassifier()
+        self.classifier = GemmaClassifier()
         
 
         self.DEFAULT_CONFIG = OrchestratorConfig(

@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
-from common.mistral_agent import MistralAgent
+from common.gemma_agent import GemmaAgent
 from agents.jimster.big_tuna import JimsterAgent
 
 DB_FILE = "schrutebot.db"
@@ -30,7 +30,7 @@ class SchruteBot(Agent):
         self.idle_time = 0
         self.cached_quotes = self.load_dwight_quotes()
         self.jimster = JimsterAgent()
-        self.mistral = MistralAgent()
+        self.gemma = GemmaAgent()
 
     def create_tables(self):
         self.cursor.execute('''
