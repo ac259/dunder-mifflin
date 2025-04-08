@@ -92,6 +92,15 @@ class SchruteBot(Agent):
         if message == "daily report":
             return self.daily_report()
 
+        if message.startswith("move task"):
+            parts = message.replace("move task", "").strip().split(" to ", 1)
+            if len(parts) == 2:
+                task, new_lane = parts[0].strip(), parts[1].strip()
+                return self.move_task(task, new_lane)
+
+        if message == "view board":
+            return self.view_board()
+
         if message == "dwightism":
             return self.dwightism()
 
