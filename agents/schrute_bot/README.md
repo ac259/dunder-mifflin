@@ -118,6 +118,16 @@ The swimlanes themselves don’t exist as a separate table — they are just val
 
 ```
 
+## Testing
+
+Try Prompts Like :
+
+```plaintext
+- add task Finish quarterly report
+- move task Finish quarterly report to in_progress
+- view board
+```
+
 ## 🚀 Stretch Goals
 
 - [ ] Markdown output for checklists
