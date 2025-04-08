@@ -2,11 +2,10 @@ import time
 import random
 import sqlite3
 import hashlib
-import sys
-import os
 # Add project root to sys.path dynamically
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
+import sys
+import os
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
@@ -39,12 +38,19 @@ class SchruteBot(Agent):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 description TEXT NOT NULL,
                 status TEXT DEFAULT 'pending',
+                lane TEXT DEFAULT 'backlog',
                 priority TEXT DEFAULT 'medium',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 hash TEXT UNIQUE
             )
         ''')
         self.conn.commit()
+
+        # Migration: add 'lane' column if it doesn't exist (for older installs)
+        try:
+            self.cursor.execute("ALTER TABLE tasks ADD COLUMN lane TEXT DEFAULT 'backlog'")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     def generate_hash(self, task):
         return hashlib.sha256(task.encode()).hexdigest()
