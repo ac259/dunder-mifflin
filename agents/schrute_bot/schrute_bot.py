@@ -2,10 +2,11 @@ import time
 import random
 import sqlite3
 import hashlib
-# Add project root to sys.path dynamically
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 import sys
 import os
+# Add project root to sys.path dynamically
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
