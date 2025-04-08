@@ -161,6 +161,20 @@ class SchruteBot(Agent):
         commentary = self.generate_dynamic_response("daily_report", context)
         return f"📊 **Daily Report**\nTasks completed: {completed}\n\n💬 *{commentary}*"
 
+    def move_task(self, task, new_lane):
+        task_hash = self.generate_hash(task)
+        self.cursor.execute("UPDATE tasks SET lane = ? WHERE hash = ?", (new_lane, task_hash))
+        self.conn.commit()
+
+        if self.cursor.rowcount:
+            context = f"Task '{task}' moved to {new_lane.upper()} lane."
+            commentary = self.generate_dynamic_response("move_task", context)
+            return f"Task moved: {task} → {new_lane.upper()} 💬 *{commentary}*"
+        else:
+            context = f"Attempted to move a task that doesn't exist: '{task}'"
+            commentary = self.generate_dynamic_response("task_missing", context)
+            return f"❌ Task not found: {task} 💬 *{commentary}*"
+
     def dwightism(self):
         commentary = self.generate_dynamic_response("dwightism")
         return f"💬 *{commentary}*"
