@@ -16,20 +16,13 @@ project_root = os.path.abspath(os.path.join(script_dir, ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-try:
-    from agents.pam_bot.agent_pam import PamBot
-except ImportError as e:
-    print("Fatal Error: Could not import PamBot from agents.pam_bot.agent_pam.", file=sys.stderr)
-    print(f"Reason: {e}", file=sys.stderr)
-    sys.exit(1)
-
 from cli.widgets.agent_panel import AgentPanel
 from cli.widgets.code_response_box import CodeResponseBox
+from cli.widgets.interaction_log import InteractionLog
+from cli.widgets.command_box import CommandBox
 from textual.containers import Horizontal
 
-from cli.widgets.interaction_log import InteractionLog
-
-from cli.widgets.command_box import CommandBox
+from agents.pam_bot.agent_pam import PamBot
 
 class DunderAgentUI(App):
     CSS_PATH = "textual_ui.css"
@@ -109,6 +102,15 @@ class DunderAgentUI(App):
                 user_id="tui_user",
                 session_id="tui_session_0"
             )
+            selected_agent = getattr(response, "agent", None)
+            if selected_agent:
+                agent_colors = {
+                    "DarrylAgent": "bold cyan",
+                    "SchruteBot": "bold green",
+                    "PamBot": "bold magenta"
+                }
+                agent_style = agent_colors.get(selected_agent, "bold yellow")
+                self.interaction_log.write(Text(f"🧠 Pam routed this to: {selected_agent}", style=agent_style))
             output = getattr(response, "output", "*No response text found.*")
 
             if output.startswith("INFO:"):
@@ -119,9 +121,12 @@ class DunderAgentUI(App):
             if code_block:
                 lang, code = code_block
                 self.interaction_log.write(Text("🤖 Pam wrote some code:", style="bold magenta"))
-                textarea = TextArea(code, language=lang, read_only=True, id="code-output", classes=f"language-{lang}") # Add classes here
+                textarea = TextArea(code, language=lang, read_only=True, id="code-output", classes=f"language-{lang}")
                 textarea.styles.height = 12
                 await self.mount(textarea, after=self.interaction_log)
+            else:
+                self.interaction_log.write(Text.from_ansi(str(output)))
+
         except Exception as e:
             self.log.error(f"Error during agent request: {e}")
             self.interaction_log.write(Text(f"Error processing command: {e}", style="bold red"))
