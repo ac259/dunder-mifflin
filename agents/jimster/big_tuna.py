@@ -1,7 +1,10 @@
 import random
 import json
+import sys
 import os
-from common.mistral_agent import MistralAgent
+# Add project root to sys.path dynamically
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+from common.gemma_agent import GemmaAgent
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
@@ -19,7 +22,7 @@ class JimsterAgent(Agent):
         )
         super().__init__(options)
 
-        self.mistral = MistralAgent()
+        self.gemma = GemmaAgent()
         self.keywords = ["prank", "joke", "fake task", "trick", "mischief", "fun"] 
 
         # Load prank settings
@@ -77,7 +80,7 @@ class JimsterAgent(Agent):
         return f"🎭 Jimster's Prank Mode is now {status}!"
 
     def generate_prank_dictionary(self, tasks: List[tuple]) -> Dict[str, str]:
-        """Generates a prank word substitution dictionary using Mistral."""
+        """Generates a prank word substitution dictionary using gemma."""
         if not tasks:
             return {}
 
@@ -92,7 +95,7 @@ class JimsterAgent(Agent):
         Example output format: {{"meeting": "party", "report": "memoir", "presentation": "stand-up routine"}}
         """
         
-        response = self.mistral.generate_response(prompt)
+        response = self.gemma.generate_response(prompt)
         try:
             prank_dict = json.loads(response)
             return prank_dict if isinstance(prank_dict, dict) else {}
@@ -112,13 +115,13 @@ class JimsterAgent(Agent):
         return " ".join(pranked_words)
 
     def generate_fake_task(self) -> str:
-        """Generates a single absurd fake task using Mistral."""
+        """Generates a single absurd fake task using gemma."""
         prompt = """You are Jim Halpert from The Office. Generate a single, absurd fake task that would confuse Dwight but still seem vaguely plausible.
         **ONLY return the task description, no extra commentary.**
         Example Output:
         "Hide all of SchruteBot’s beets"
         """
-        return self.mistral.generate_response(prompt).strip().strip('"')
+        return self.gemma.generate_response(prompt).strip().strip('"')
 
     def prank_task_list(self, tasks: List[tuple]) -> List[tuple]:
         """Modifies some task descriptions in the task list and generates dynamic fake tasks."""
