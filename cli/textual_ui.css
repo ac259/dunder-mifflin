@@ -1,0 +1,93 @@
+Screen {
+    background: #1e1e1e;
+    color: #d4d4d4;
+}
+
+Header, Footer {
+    background: #2d2d2d;
+    color: #ffffff;
+}
+
+#main-container {
+    layout: horizontal;
+    height: 1fr;
+    width: 100%;
+}
+
+#sidebar {
+    width: 30%;
+    height: 100%;
+    border: round yellow;
+    background: #252526;
+    display: none; /* Initially hidden */
+}
+
+#interaction-log {
+    width: 1fr;
+    height: 100%;
+    background: #1e1e1e;
+    border: round #007acc;
+    padding: 1;
+}
+
+#command-box {
+    background: #2d2d2d;
+    border: round #007acc;
+    color: #ffffff;
+}
+
+#code-output {
+    height: 12;
+    padding: 1;
+    margin: 1 0;
+    background: #282c34; /* Slightly darker background for code */
+    color: #abb2bf;      /* Base code text color */
+    border: round #6a9955;
+    overflow: auto; /* Add scrollbars if code exceeds the box */
+}
+
+/* Syntax highlighting for Python (example - adjust colors as desired) */
+#code-output.language-python .keyword {
+    color: #c678dd;
+    text-style: bold; /* Corrected property */
+}
+
+#code-output.language-python .string {
+    color: #98c379;
+}
+
+#code-output.language-python .number {
+    color: #d19a66;
+}
+
+#code-output.language-python .comment {
+    color: #5c6370;
+    text-style: italic; /* Corrected property */
+}
+
+#code-output.language-python .operator {
+    color: #e06c75;
+}
+
+#code-output.language-python .punctuation {
+    color: #abb2bf;
+}
+
+#code-output.language-python .name.function {
+    color: #61afef;
+}
+
+#code-output.language-python .name.class {
+    color: #e5c07b;
+}
+
+/* Basic styling for other languages (you'll need more specific rules) */
+#code-output.language-text {
+    color: #cccccc;
+}
+
+#code-controls {
+    dock: bottom;
+    padding: 0 1;
+    margin-top: 1;
+}

@@ -75,13 +75,3 @@ class PamBot:
             session_id=session_id
         )
         return response
-
-# Example usage
-# if __name__ == "__main__":
-    # pam = PamBot()
-    # user_input = "Generate code in python to create an agent that can integrate with MCP + Git."
-    # user_id = "ani"
-    # session_id = "session_456"
-    # # Run the asynchronous route_requests method
-    # response = asyncio.run(pam.route_requests(user_input, user_id, session_id))
-    # print(response)
