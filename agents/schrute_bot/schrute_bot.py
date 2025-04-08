@@ -175,6 +175,29 @@ class SchruteBot(Agent):
             commentary = self.generate_dynamic_response("task_missing", context)
             return f"❌ Task not found: {task} 💬 *{commentary}*"
 
+    def view_board(self):
+        self.cursor.execute("""
+            SELECT lane, description, status, priority
+            FROM tasks
+            ORDER BY lane, priority DESC, timestamp ASC
+        """)
+        tasks = self.cursor.fetchall()
+
+        if not tasks:
+            return "📋 Your board is clean. Dwight is... suspicious."
+
+        board = {}
+        for lane, desc, status, priority in tasks:
+            board.setdefault(lane.upper(), []).append(f"• {desc.strip().capitalize()} ({status.upper()}, {priority.upper()})")
+
+        output = ["🗂️ **Project Board**"]
+        for lane in sorted(board):
+            output.append(f"📦 **{lane}**")
+            output.extend(board[lane])
+
+        commentary = self.generate_dynamic_response("view_board", "Display current swimlanes.")
+        return "".join(output) + f" 💬 *{commentary}*"
+
     def dwightism(self):
         commentary = self.generate_dynamic_response("dwightism")
         return f"💬 *{commentary}*"
