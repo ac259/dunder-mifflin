@@ -2,10 +2,10 @@ import time
 import random
 import sqlite3
 import hashlib
-# Add project root to sys.path dynamically
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 import sys
 import os
+# Add project root to sys.path dynamically
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
@@ -197,15 +197,17 @@ class SchruteBot(Agent):
 
         board = {}
         for lane, desc, status, priority in tasks:
-            board.setdefault(lane.upper(), []).append(f"• {desc.strip().capitalize()} ({status.upper()}, {priority.upper()})")
+            entry = f"• {desc.strip().capitalize()} ({status.upper()}, {priority.upper()})"
+            board.setdefault(lane.upper(), []).append(entry)
 
         output = ["🗂️ **Project Board**"]
         for lane in sorted(board):
-            output.append(f"📦 **{lane}**")
+            output.append(f"\n📦 **{lane}**")
             output.extend(board[lane])
 
         commentary = self.generate_dynamic_response("view_board", "Display current swimlanes.")
-        return "".join(output) + f" 💬 *{commentary}*"
+        return "\n".join(output) + f"\n\n💬 *{commentary}*"
+
 
     def dwightism(self):
         commentary = self.generate_dynamic_response("dwightism")
