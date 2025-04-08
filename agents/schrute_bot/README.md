@@ -105,6 +105,19 @@ Dwight will still chime in after every action with custom feedback.
 
 ---
 
+## 🧠 “The Board” = Lanes Stored in the Database
+
+The swimlanes themselves don’t exist as a separate table — they are just values in the lane column of the tasks table.
+
+```sql
+| id | description          | status     | lane         | priority |
+|----|----------------------|------------|--------------|----------|
+| 1  | Build login screen   | pending    | backlog      | high     |
+| 2  | Set up database      | in_review  | in_progress  | medium   |
+| 3  | Finalize copy        | completed  | done         | low      |
+
+```
+
 ## 🚀 Stretch Goals
 
 - [ ] Markdown output for checklists
