@@ -11,6 +11,7 @@ from common.mistral_agent import MistralAgent
 from agents.jimster.big_tuna import JimsterAgent
 from agents.schrute_bot.schrute_bot import SchruteBot
 from agents.darryl_coding_agent.darryls_tech_warehouse import DarrylBot
+from agents.oscar.agent_oscar import OscarAgent
 from common.mistral_classifier import MistralClassifier
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class PamBot:
         self.schrute_bot = SchruteBot()
         self.jimster_agent = JimsterAgent()
         self.darryl_agent = DarrylBot()
+        self.oscar_agent = OscarAgent()
         self.classifier = MistralClassifier()
         
 
@@ -55,7 +57,8 @@ class PamBot:
         """Registers all available agents."""
         agents = [self.schrute_bot, 
                   self.jimster_agent,
-                  self.darryl_agent
+                  self.darryl_agent,
+                  self.oscar_agent
                   ]
         for agent in agents:
             logger.debug(f"Type: {type(agent)}, Value: {agent}")
