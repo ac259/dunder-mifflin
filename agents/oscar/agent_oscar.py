@@ -1,119 +1,46 @@
+import sys
+import os
 import asyncio
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
-from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
-from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
 import ollama
-from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
+from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
+from multi_agent_orchestrator.types import ConversationMessage
 
-class DueDiligenceTool:
+# Ensure root path is added for module resolution
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+from tools.due_diligence_tool import DueDiligenceTool
+
+MODEL = "gemma3:1b"
+
+class OscarAgent(Agent):
     def __init__(self):
-        self.model = "gemma:7b"  # Updated to preferred Gemma model name if applicable
-
-    def generate_response(self, prompt: str) -> str:
-        try:
-            response = ollama.chat(model=self.model, messages=[{"role": "user", "content": prompt}])
-            return response['message']['content']
-        except Exception as e:
-            return f"Error generating response: {e}"
-
-    async def search(self, query: str, max_results: int = 5) -> str:
-        output_lines = ["**Search Results:**\n"]
-        try:
-            async with AsyncWebCrawler() as crawler:
-                results = await crawler.search(query=query, max_results=max_results)
-
-                if not results:
-                    return "No results were found for your query."
-
-                for i, res in enumerate(results):
-                    title = res.get('title', 'Untitled')
-                    url = res.get('url', '#')
-                    output_lines.append(f"{i+1}. **[{title}]({url})**")
-
-        except AttributeError:
-            return "Error: AsyncWebCrawler may not support direct 'search'."
-        except Exception as e:
-            return f"Error during search: {e}"
-
-        return "\n".join(output_lines)
-
-    async def summarize_search_results(self, query: str, max_results: int = 3) -> str:
-        results_content = []
-        try:
-            async with AsyncWebCrawler() as crawler:
-                search_results = await crawler.search(query=query, max_results=max_results)
-
-                if not search_results:
-                    return "No substantial results found to summarize."
-
-                for res in search_results:
-                    title = res.get('title', 'Untitled')
-                    content = res.get('content')
-                    url = res.get('url')
-                    if content and content.strip():
-                        results_content.append(f"**Source Title:** {title}\n**URL:** {url}\n**Content:**\n{content}\n---")
-                    elif url:
-                        results_content.append(f"**Source Title:** {title}\n**URL:** {url}\n**Content:** [Content not directly available]\n---")
-
-        except Exception as e:
-            return f"Error summarizing search results: {e}"
-
-        if not results_content:
-            return "No suitable content found for summarization."
-
-        full_content = "\n\n".join(results_content)
-        prompt = f"""
-        You are Oscar Martinez from The Office. Provide a clear, professional summary of the following information:
-
-        {full_content}
-
-        Summary:
-        """
-        return self.generate_response(prompt).strip()
-
-    async def deep_crawl_url(self, url: str, max_depth: int = 1, max_pages: int = 10) -> str:
-        crawled_content = []
-
-        config = CrawlerRunConfig(
-            deep_crawl_strategy=BFSDeepCrawlStrategy(
-                max_depth=max_depth,
-                max_pages=max_pages,
-                include_external=False,
+        options = AgentOptions(
+            name="OscarAgent",
+            description=(
+                "A precise AI assistant modeled after Oscar Martinez. Capabilities include summarizing search results, "
+                "and deep crawling URLs to extract structured insights."
             ),
-            scraping_strategy=LXMLWebScrapingStrategy(),
-            verbose=False
+            save_chat=True,
+            callbacks=AgentCallbacks(),
+            LOG_AGENT_DEBUG_TRACE=False
         )
+        super().__init__(options)
+        self.model = MODEL
+        self.research_tool = DueDiligenceTool()
 
-        try:
-            async with AsyncWebCrawler() as crawler:
-                results = await crawler.arun(url, config=config)
+    async def handle_search_request(self, query: str) -> str:
+        return "Search functionality is currently unavailable. Please use summarization or deep crawl features."
 
-            if not results:
-                return f"No pages successfully crawled from {url}."
+    async def handle_summarize_request(self, query: str) -> str:
+        if not query or not query.strip():
+            return "A specific query is required for summarized research."
+        return await self.research_tool.summarize_search_results(query.strip())
 
-            for i, result in enumerate(results):
-                content = result.markdown if hasattr(result, 'markdown') and result.markdown else result.content
-                if content and content.strip():
-                    crawled_content.append(f"**URL ({i+1}):** {result.url}\n**Content Snippet:**\n{content[:500]}...\n---")
-                else:
-                    crawled_content.append(f"**URL ({i+1}):** {result.url}\n**Content:** [No substantial content]\n---")
-
-        except Exception as e:
-            return f"Error during deep crawl: {e}"
-
-        if not crawled_content:
-            return f"Deep crawl completed, but no usable content extracted from {url}."
-
-        full_crawled_text = "\n\n".join(crawled_content)
-        prompt = f"""
-        You are Oscar Martinez from The Office. Provide a professional and concise summary of the deep crawl findings:
-
-        {full_crawled_text}
-
-        Summary:
-        """
-        return self.generate_response(prompt).strip()
+    async def handle_deep_crawl_request(self, url: str) -> str:
+        if not url or not url.strip().startswith(('http://', 'https://')):
+            return "Please provide a valid URL (starting with http:// or https://) for the deep crawl."
+        return await self.research_tool.deep_crawl_url(url.strip())
 
     async def process_request(
         self,
@@ -133,4 +60,21 @@ class DueDiligenceTool:
             except ValueError as e:
                 return str(e)
 
-        return self.generate_response(message)
+        # Default behavior: summarize the query
+        return await self.handle_summarize_request(message)
+
+
+# Optional test runner
+async def run_tests():
+    agent = OscarAgent()
+    print("\n🔍 SEARCH TEST:")
+    print(await agent.handle_search_request("AI in education"))
+
+    print("\n📄 SUMMARY TEST:")
+    print(await agent.handle_summarize_request("future of renewable energy"))
+
+    print("\n🕸️ DEEP CRAWL TEST:")
+    print(await agent.handle_deep_crawl_request("https://www.nrel.gov"))
+
+if __name__ == '__main__':
+    asyncio.run(run_tests())
