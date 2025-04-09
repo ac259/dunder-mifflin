@@ -62,19 +62,3 @@ class OscarAgent(Agent):
 
         # Default behavior: summarize the query
         return await self.handle_summarize_request(message)
-
-
-# Optional test runner
-async def run_tests():
-    agent = OscarAgent()
-    print("\n🔍 SEARCH TEST:")
-    print(await agent.handle_search_request("research on the new pokemon game for switch"))
-
-    print("\n📄 SUMMARY TEST:")
-    print(await agent.handle_summarize_request("future of renewable energy"))
-
-    # print("\n🕸️ DEEP CRAWL TEST:")
-    # print(await agent.handle_deep_crawl_request("https://www.nrel.gov"))
-
-if __name__ == '__main__':
-    asyncio.run(run_tests())
