@@ -85,3 +85,23 @@ cli/
 ```
 
 ---
+
+### Acknowledgements
+
+This project uses [crawl4ai](https://github.com/unclecode/crawl4ai) for real-time web crawling and research capabilities.
+
+We thank the creators of crawl4ai for their open-source contribution. Licensed under the terms provided in their repository.
+
+#### Citation
+
+```bash
+@software{crawl4ai2024,
+  author = {UncleCode},
+  title = {Crawl4AI: Open-source LLM Friendly Web Crawler & Scraper},
+  year = {2024},
+  publisher = {GitHub},
+  journal = {GitHub Repository},
+  howpublished = {\url{https://github.com/unclecode/crawl4ai}},
+  version = {0.5.0.post8}
+}
+```
