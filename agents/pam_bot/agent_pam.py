@@ -16,7 +16,7 @@ from common.gemma_classifier import GemmaClassifier
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.CRITICAL)  # You can set this dynamically later
+logger.setLevel(logging.INFO)  # You can set this dynamically later
 
 # Optional: only if not already configured elsewhere
 if not logging.getLogger().handlers:
@@ -28,13 +28,11 @@ if not logging.getLogger().handlers:
 class PamBot:
     def __init__(self, log_verbose: bool = True):
         # Initialize Mistral LLM
-        # self.mistral = MistralAgent()
         self.gemma = GemmaAgent()
         self.schrute_bot = SchruteBot()
         self.jimster_agent = JimsterAgent()
         self.darryl_agent = DarrylBot()
         self.oscar_agent = OscarAgent()
-        # self.classifier = MistralClassifier()
         self.classifier = GemmaClassifier()
         
 

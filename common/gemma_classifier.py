@@ -50,18 +50,23 @@ class GemmaClassifier(Classifier):
         Respond with ONLY the agent name (e.g., DarrylAgent or SchruteBot), no extra text or explanation.
 
         Examples:
+        # Code/Dev Tasks → DarrylAgent
         - "write code to sort a list" → DarrylAgent
-        - "give me python code for binary search" → DarrylAgent
-        - "how do I write a REST API in FastAPI?" → DarrylAgent
+        - "generate code for a web scraper" → DarrylAgent
         - "debug this script" → DarrylAgent
-        - "generate code" → DarrylAgent
-        - "assign a task to Jim" → SchruteBot
-        - "view my task list" → SchruteBot
-        - "view tasks" → SchruteBot
-        - "what tasks do I have?" → SchruteBot
-        - "mark the client proposal as complete" → SchruteBot
-        - "daily report" → SchruteBot
-        - "give me a dwight quote" → SchruteBot
+
+        # Task Management → SchruteBot
+        - "add a task to meet client" → SchruteBot
+        - "complete proposal follow-up task" → SchruteBot
+
+        # Pranks → JimsterAgent
+        - "create a prank task for Dwight" → JimsterAgent
+
+        # Research/Summary → OscarAgent
+        - "summarize financial trends after 90 day tariff pause" → OscarAgent
+        - "research Tesla's performance after SEC update" → OscarAgent
+        - "get search insights on Microsoft layoffs" → OscarAgent
+        - "summarize latest news on interest rates and banks" → OscarAgent
 
         Available agents and their descriptions:
         {self.get_agents_descriptions()}
@@ -70,14 +75,25 @@ class GemmaClassifier(Classifier):
         Which agent should handle this?
         """
 
-        response = self.gemma_agent.generate_response(prompt).strip()
-        print(f"[GemmaClassifier] Model responded with: '{response}'")
+        try:
+            response = self.gemma_agent.generate_response(prompt).strip()
+            logger.info(f"[GemmaClassifier] 🤖 Model raw response: '{response}'")
+        except Exception as e:
+            logger.error(f"[GemmaClassifier] ❌ Failed to get LLM response: {e}")
+            return ClassifierResult(selected_agent=None, confidence=0.0)
 
+        # Normalize response
+        normalized = response.lower().replace(" ", "").replace(".", "")
+        logger.info(f"[GemmaClassifier] Normalized response: '{normalized}'")
 
         for agent in self.agents:
-            if agent.name.lower() == response.lower():
+            agent_key = agent.name.lower().replace(" ", "")
+            logger.info(f"[GemmaClassifier] Comparing to agent: '{agent_key}'")
+            if agent_key == normalized:
+                logger.info(f"[GemmaClassifier] ✅ Matched agent: {agent.name}")
                 return ClassifierResult(selected_agent=agent, confidence=1.0)
 
+        logger.warning(f"[GemmaClassifier] ❌ No agent matched LLM response: '{response}'")
         return ClassifierResult(selected_agent=None, confidence=0.0)
 
     async def process_request(

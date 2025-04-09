@@ -1,14 +1,17 @@
 import requests
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.CRITICAL)
 
 class GemmaAgent:
-    def __init__(self, model="gemma3:1b", base_url="http://localhost:11434/api/generate"):
+    def __init__(self, model="gemma3:4b", base_url="http://localhost:11434/api/generate"):
         self.model = model
         self.base_url = base_url
         self.intents = ["greeting", "question", "command", "farewell"]
 
     def generate_response(self, user_input: str) -> str:
         """
-        Generates a helpful response using the Gemma 1B model via Ollama.
+        Generates a helpful response using the Gemma 1B or 4B model via Ollama.
         """
         prompt = f"""You are a helpful, concise, and intelligent assistant. You answer clearly, avoid unnecessary repetition, and provide insightful responses.
 
@@ -19,6 +22,8 @@ class GemmaAgent:
         User: {user_input}
         Assistant:"""
 
+        logging.info(f"[GemmaAgent] 📩 Prompt received:\n{user_input}")
+
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -27,6 +32,9 @@ class GemmaAgent:
 
         response = requests.post(self.base_url, json=payload)
         response.raise_for_status()
+        logging.info(f"[GemmaAgent] 📤 Raw response: {response}")
+        result = response.json()
+        logging.info(f"[GemmaAgent] 📤 LLM said:\n{result['response']}")
         return response.json()["response"].strip()
 
     def analyze_intent(self, message: str) -> str:
