@@ -3,6 +3,8 @@ from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
 import ollama
+from duckduckgo_search import DDGS
+from itertools import islice
 
 class DueDiligenceTool:
     def __init__(self):
@@ -20,8 +22,45 @@ class DueDiligenceTool:
             print(f"Error generating Ollama response: {e}")
             return f"Error generating summary: {e}"
 
-    async def search(self, query: str, max_results: int = 5) -> str:
-        return "**Search functionality is currently unavailable. Please use summarization or deep crawl features instead.**"
+    async def search(self, query: str, max_results: int = 10) -> str:
+        """
+        Performs a DuckDuckGo search and uses Crawl4AI to fetch and extract content from the top results.
+        Returns a Markdown-formatted summary.
+        """
+        output_lines = [f"**Search Results for '{query}':**"]
+        fetch_config = CrawlerRunConfig(
+            deep_crawl_strategy=BFSDeepCrawlStrategy(
+                max_depth=0,
+                max_pages=1,
+                include_external=False
+            ),
+            scraping_strategy=LXMLWebScrapingStrategy(),
+            verbose=False
+            )
+
+        try:
+            with DDGS() as ddgs:
+                ddgs_text_gen = ddgs.text(query, region='wt-wt', safesearch='Moderate')
+                async with AsyncWebCrawler() as crawler:
+                    for i, result in enumerate(islice(ddgs_text_gen, max_results)):
+                        title = result.get('title', 'Untitled')
+                        url = result.get('href', '#')
+
+                        try:
+                            crawl_results = await crawler.arun(url, config=fetch_config)
+                            page = crawl_results[0] if crawl_results else None
+                            content = getattr(page, 'markdown', None) or getattr(page, 'html', None) or "[No content]"
+                        except Exception as crawl_error:
+                            print(f"Crawl error for {url}: {crawl_error}")
+                            content = "[Error fetching content]"
+                        # 500 char limit
+                        output_lines.append(f"{i+1}. **[{title}]({url})** > {content[:500]}...")
+
+        except Exception as e:
+            return f"Error during search and crawl: {e}"
+
+        return "".join(output_lines)
+
 
     async def summarize_search_results(self, query: str, max_urls_to_summarize: int = 3) -> str:
         return "**Summarization from search is currently unavailable. Please use deep crawl instead.**"

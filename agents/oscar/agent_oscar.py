@@ -30,7 +30,7 @@ class OscarAgent(Agent):
         self.research_tool = DueDiligenceTool()
 
     async def handle_search_request(self, query: str) -> str:
-        return "Search functionality is currently unavailable. Please use summarization or deep crawl features."
+        return await self.research_tool.search(query) #"Search functionality is currently unavailable. Please use summarization or deep crawl features."
 
     async def handle_summarize_request(self, query: str) -> str:
         if not query or not query.strip():
@@ -68,13 +68,13 @@ class OscarAgent(Agent):
 async def run_tests():
     agent = OscarAgent()
     print("\n🔍 SEARCH TEST:")
-    print(await agent.handle_search_request("AI in education"))
+    print(await agent.handle_search_request("White Lotus"))
 
     print("\n📄 SUMMARY TEST:")
     print(await agent.handle_summarize_request("future of renewable energy"))
 
-    print("\n🕸️ DEEP CRAWL TEST:")
-    print(await agent.handle_deep_crawl_request("https://www.nrel.gov"))
+    # print("\n🕸️ DEEP CRAWL TEST:")
+    # print(await agent.handle_deep_crawl_request("https://www.nrel.gov"))
 
 if __name__ == '__main__':
     asyncio.run(run_tests())
