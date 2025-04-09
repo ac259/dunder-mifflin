@@ -28,7 +28,7 @@ class GemmaClassifier(Classifier):
             raise TypeError(f"Expected a list of Agent objects, but got {type(agents)} with values: {agents}")
 
         self.agents = agents
-        logger.debug(f"✅ Agents set in GemmaClassifier: {self.agents}")
+        logger.info(f"✅ Agents set in GemmaClassifier: {self.agents}")
         for agent in self.agents:
             logger.debug(f"- {agent.name}: {agent.description}")
 
@@ -43,9 +43,13 @@ class GemmaClassifier(Classifier):
 
     async def classify(self, user_input: str, chat_history: List[ConversationMessage]) -> ClassifierResult:
         prompt = f"""
-        You are a classifier that assigns user inputs to the most suitable agent based on their expertise.
+        You are a classifier that routes user inputs to the most suitable agent.
 
-        Here are example mappings:
+        Match the user's request to the correct agent name based on the examples.
+
+        Respond with ONLY the agent name (e.g., DarrylAgent or SchruteBot), no extra text or explanation.
+
+        Examples:
         - "write code to sort a list" → DarrylAgent
         - "give me python code for binary search" → DarrylAgent
         - "how do I write a REST API in FastAPI?" → DarrylAgent
@@ -53,19 +57,22 @@ class GemmaClassifier(Classifier):
         - "generate code" → DarrylAgent
         - "assign a task to Jim" → SchruteBot
         - "view my task list" → SchruteBot
+        - "view tasks" → SchruteBot
+        - "what tasks do I have?" → SchruteBot
         - "mark the client proposal as complete" → SchruteBot
         - "daily report" → SchruteBot
         - "give me a dwight quote" → SchruteBot
-        - "who won the NBA finals?" → Use a general factual agent if available
 
         Available agents and their descriptions:
         {self.get_agents_descriptions()}
 
         User input: "{user_input}"
-
-        Which agent is best suited to handle this input? Provide only the agent's name.
+        Which agent should handle this?
         """
+
         response = self.gemma_agent.generate_response(prompt).strip()
+        print(f"[GemmaClassifier] Model responded with: '{response}'")
+
 
         for agent in self.agents:
             if agent.name.lower() == response.lower():

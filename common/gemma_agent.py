@@ -1,7 +1,7 @@
 import requests
 
 class GemmaAgent:
-    def __init__(self, model="gemma:1b", base_url="http://localhost:11434/api/generate"):
+    def __init__(self, model="gemma3:1b", base_url="http://localhost:11434/api/generate"):
         self.model = model
         self.base_url = base_url
         self.intents = ["greeting", "question", "command", "farewell"]
