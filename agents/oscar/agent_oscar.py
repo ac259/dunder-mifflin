@@ -68,7 +68,7 @@ class OscarAgent(Agent):
 async def run_tests():
     agent = OscarAgent()
     print("\n🔍 SEARCH TEST:")
-    print(await agent.handle_search_request("White Lotus"))
+    print(await agent.handle_search_request("research on the new pokemon game for switch"))
 
     print("\n📄 SUMMARY TEST:")
     print(await agent.handle_summarize_request("future of renewable energy"))
