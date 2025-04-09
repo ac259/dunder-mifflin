@@ -1,43 +1,136 @@
+import asyncio
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
+from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
 import ollama
-from multi_agent_orchestrator.agents import Agent, AgentOptions, AgentCallbacks
 from multi_agent_orchestrator.types import ConversationMessage
 from typing import List, Optional, Dict
 
-from tools.due_diligence_tool import DueDiligenceTool
-
-MODEL = "gemma3:1b"  # Default model
-
-class OscarAgent(Agent):
+class DueDiligenceTool:
     def __init__(self):
-        """Initialize OscarAgent with a default model and research capability."""
-        options = AgentOptions(
-            name="OscarAgent",
-            description=(
-                "A precise and research-driven AI assistant modeled after Oscar from The Office."
-                " Specializes in verifying facts, conducting deep research, and responding in a professional tone."
+        self.model = "gemma:7b"  # Updated to preferred Gemma model name if applicable
+
+    def generate_response(self, prompt: str) -> str:
+        try:
+            response = ollama.chat(model=self.model, messages=[{"role": "user", "content": prompt}])
+            return response['message']['content']
+        except Exception as e:
+            return f"Error generating response: {e}"
+
+    async def search(self, query: str, max_results: int = 5) -> str:
+        output_lines = ["**Search Results:**\n"]
+        try:
+            async with AsyncWebCrawler() as crawler:
+                results = await crawler.search(query=query, max_results=max_results)
+
+                if not results:
+                    return "No results were found for your query."
+
+                for i, res in enumerate(results):
+                    title = res.get('title', 'Untitled')
+                    url = res.get('url', '#')
+                    output_lines.append(f"{i+1}. **[{title}]({url})**")
+
+        except AttributeError:
+            return "Error: AsyncWebCrawler may not support direct 'search'."
+        except Exception as e:
+            return f"Error during search: {e}"
+
+        return "\n".join(output_lines)
+
+    async def summarize_search_results(self, query: str, max_results: int = 3) -> str:
+        results_content = []
+        try:
+            async with AsyncWebCrawler() as crawler:
+                search_results = await crawler.search(query=query, max_results=max_results)
+
+                if not search_results:
+                    return "No substantial results found to summarize."
+
+                for res in search_results:
+                    title = res.get('title', 'Untitled')
+                    content = res.get('content')
+                    url = res.get('url')
+                    if content and content.strip():
+                        results_content.append(f"**Source Title:** {title}\n**URL:** {url}\n**Content:**\n{content}\n---")
+                    elif url:
+                        results_content.append(f"**Source Title:** {title}\n**URL:** {url}\n**Content:** [Content not directly available]\n---")
+
+        except Exception as e:
+            return f"Error summarizing search results: {e}"
+
+        if not results_content:
+            return "No suitable content found for summarization."
+
+        full_content = "\n\n".join(results_content)
+        prompt = f"""
+        You are Oscar Martinez from The Office. Provide a clear, professional summary of the following information:
+
+        {full_content}
+
+        Summary:
+        """
+        return self.generate_response(prompt).strip()
+
+    async def deep_crawl_url(self, url: str, max_depth: int = 1, max_pages: int = 10) -> str:
+        crawled_content = []
+
+        config = CrawlerRunConfig(
+            deep_crawl_strategy=BFSDeepCrawlStrategy(
+                max_depth=max_depth,
+                max_pages=max_pages,
+                include_external=False,
             ),
-            save_chat=True,
-            callbacks=AgentCallbacks(),
-            LOG_AGENT_DEBUG_TRACE=False
+            scraping_strategy=LXMLWebScrapingStrategy(),
+            verbose=False
         )
-        super().__init__(options)
-        self.model = MODEL
-        self.research_tool = DueDiligenceTool()
 
-    def handle_research_request(self, message: str) -> str:
+        try:
+            async with AsyncWebCrawler() as crawler:
+                results = await crawler.arun(url, config=config)
+
+            if not results:
+                return f"No pages successfully crawled from {url}."
+
+            for i, result in enumerate(results):
+                content = result.markdown if hasattr(result, 'markdown') and result.markdown else result.content
+                if content and content.strip():
+                    crawled_content.append(f"**URL ({i+1}):** {result.url}\n**Content Snippet:**\n{content[:500]}...\n---")
+                else:
+                    crawled_content.append(f"**URL ({i+1}):** {result.url}\n**Content:** [No substantial content]\n---")
+
+        except Exception as e:
+            return f"Error during deep crawl: {e}"
+
+        if not crawled_content:
+            return f"Deep crawl completed, but no usable content extracted from {url}."
+
+        full_crawled_text = "\n\n".join(crawled_content)
+        prompt = f"""
+        You are Oscar Martinez from The Office. Provide a professional and concise summary of the deep crawl findings:
+
+        {full_crawled_text}
+
+        Summary:
         """
-        Handles incoming research requests by passing the query to Oscar's research tool.
-        The response is a professional, well-reasoned summary of findings.
-        """
-        if not message or not message.strip():
-            return "I'm going to need a more specific query. I can't work with vague prompts."
+        return self.generate_response(prompt).strip()
 
-        print("🔍 Oscar is conducting a detailed investigation...")
-        summary = self.research_tool.deep_research(message.strip())
-        return f"🗂️ **Oscar's Findings:**\n\n{summary}\n\n---\n\n*Powered by [crawl4ai](https://github.com/unclecode/crawl4ai)*"
+    async def process_request(
+        self,
+        input_text: str,
+        user_id: str,
+        session_id: str,
+        chat_history: List[ConversationMessage],
+        additional_params: Optional[Dict[str, str]] = None
+    ) -> str:
+        message = input_text.strip()
 
-# Optional test case
-if __name__ == '__main__':
-    oscar = OscarAgent()
-    topic = "How LLMs impact enterprise productivity"
-    print(oscar.handle_research_request(topic))
+        if message.lower().startswith("set model"):
+            model_name = message.replace("set model", "").strip()
+            try:
+                self.model = model_name
+                return f"✅ OscarAgent now using model: {self.model}"
+            except ValueError as e:
+                return str(e)
+
+        return self.generate_response(message)
